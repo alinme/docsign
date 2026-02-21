@@ -27,9 +27,11 @@
 * Utilize a modern technology stack that includes **shadcn/ui** components and **Tailwind CSS v4** for styling.
 * Select clear, highly legible fonts for optimal readability across all screen sizes.
 
-**6. Security Features**
-* Implement end-to-end encryption for document storage and the signing process.
-* Include secure user authentication and authorization to control access to sensitive documents.
+**6. Security Features & Compliance**
+* Implement strict row-level security and utilize **Encryption in Transit (TLS) and at Rest (AES-256)** to protect document storage and the signing process.
+* Build a comprehensive **Audit Trail** that logs IP addresses, timestamps, and exact actions to ensure legally binding signatures.
+* Ensure uploaded files are restricted strictly to **PDF format** to enable secure and robust client-side manipulation of final documents.
+* Implement a robust expiration policy where unsigned documents automatically void after a set period (e.g., 7 days).
 
 ### Experience & Iteration
 
