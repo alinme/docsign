@@ -1,7 +1,7 @@
 // Supabase Edge Function: send reminder emails to pending signers for documents expiring in 48 hours.
 // Invoke with: Authorization: Bearer <ANON_KEY> (Supabase requires a valid JWT) and X-Cron-Secret: <CRON_SECRET>.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+//import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API = "https://api.resend.com/emails";
 
