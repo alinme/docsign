@@ -3,7 +3,7 @@ import LoginForm from "./LoginForm";
 
 type Props = {
     params: Promise<{ locale: string }>;
-    searchParams: Promise<{ code?: string; next?: string; state?: string }>;
+    searchParams: Promise<{ code?: string; next?: string; state?: string; view?: string }>;
 };
 
 export default async function LoginPage({ params, searchParams }: Props) {
@@ -18,5 +18,5 @@ export default async function LoginPage({ params, searchParams }: Props) {
         redirect(`/${locale}/auth/callback?${q.toString()}`);
     }
 
-    return <LoginForm />;
+    return <LoginForm initialView={sp.view === "forgot" ? "forgot" : undefined} />;
 }

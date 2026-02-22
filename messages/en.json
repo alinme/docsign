@@ -278,7 +278,8 @@
         "footerPrivacy": "Privacy",
         "footerCookies": "Cookies",
         "footerTerms": "Terms",
-        "footerDocumentation": "Documentation"
+        "footerDataDeletion": "Data deletion",
+        "footerDocumentation": "Docs"
     },
     "Sign": {
         "failedToLoad": "Failed to load document",

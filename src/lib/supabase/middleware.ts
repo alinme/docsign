@@ -42,14 +42,10 @@ export async function updateSession(request: NextRequest) {
     const locale = isLocale ? localeSegment : 'en'
     const pathWithoutLocale = isLocale ? '/' + segments.slice(1).join('/') : pathname
 
-    if (
-        !user &&
-        !pathWithoutLocale.startsWith('/auth/login') &&
-        !pathWithoutLocale.startsWith('/auth/callback') &&
-        !pathWithoutLocale.startsWith('/auth/forgot-password') &&
-        !pathWithoutLocale.startsWith('/auth/update-password') &&
-        !pathWithoutLocale.startsWith('/sign/')
-    ) {
+    const publicPaths = ['/auth/login', '/auth/callback', '/auth/forgot-password', '/auth/update-password', '/privacy', '/terms', '/cookies', '/data-deletion', '/about', '/docs']
+    const isPublic = publicPaths.some(p => pathWithoutLocale === p || pathWithoutLocale.startsWith(p + '/')) || pathWithoutLocale.startsWith('/sign/')
+
+    if (!user && !isPublic) {
         const url = request.nextUrl.clone()
         url.pathname = `/${locale}/auth/login`
         return NextResponse.redirect(url)

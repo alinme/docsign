@@ -4,15 +4,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { login, signup } from "@/actions/auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { useParams } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/logo/Logo";
+import { AuthFooter } from "@/components/auth/AuthFooter";
+import { LandingContent } from "@/components/landing/LandingContent";
 
 const SOCIAL_LOGIN_COOKIE = "getsign_social_login_enabled";
 
@@ -47,20 +48,245 @@ function MetaIcon({ className }: { className?: string }) {
 
 const buttonTransition = "transition-all duration-200 ease-out";
 
-export default function LoginForm() {
+type View = "login" | "signup" | "forgot";
+
+type AuthFormBodyProps = {
+    view: View;
+    setView: (v: View) => void;
+    t: ReturnType<typeof useTranslations<"Auth">>;
+    isForgotView: boolean;
+    forgotSent: boolean;
+    forgotEmail: string;
+    setForgotEmail: (s: string) => void;
+    setForgotSent: (b: boolean) => void;
+    forgotLoading: boolean;
+    setForgotLoading: (b: boolean) => void;
+    handleForgotSubmit: (e: React.FormEvent) => void;
+    isLoginView: boolean;
+    socialLoginEnabled: boolean;
+    anySocialLoading: boolean;
+    loadingGoogle: boolean;
+    loadingMeta: boolean;
+    handleSignInWith: (provider: "google" | "facebook") => void;
+    handleSubmit: (formData: FormData) => void;
+    isLoading: boolean;
+};
+
+function AuthFormBody({
+    view,
+    setView,
+    t,
+    isForgotView,
+    forgotSent,
+    forgotEmail,
+    setForgotEmail,
+    setForgotSent,
+    forgotLoading,
+    setForgotLoading,
+    handleForgotSubmit,
+    isLoginView,
+    socialLoginEnabled,
+    anySocialLoading,
+    loadingGoogle,
+    loadingMeta,
+    handleSignInWith,
+    handleSubmit,
+    isLoading,
+}: AuthFormBodyProps) {
+    return (
+        <div className="w-full max-w-[400px] space-y-6">
+            {isForgotView ? (
+                <>
+                    <div className="space-y-1 text-center">
+                        <div className="mx-auto mb-4 flex justify-center">
+                            <Logo className="h-12 w-12" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {t("forgotPasswordTitle")}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {t("forgotPasswordDesc")}
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                        {forgotSent ? (
+                            <div className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+                                {t("resetLinkSent")}
+                            </div>
+                        ) : (
+                            <form onSubmit={handleForgotSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="forgot-email">{t("email")}</Label>
+                                    <Input
+                                        id="forgot-email"
+                                        type="email"
+                                        placeholder={t("emailPlaceholder")}
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                        required
+                                        disabled={forgotLoading}
+                                    />
+                                </div>
+                                <Button
+                                    type="submit"
+                                    className={`w-full ${buttonTransition}`}
+                                    disabled={forgotLoading}
+                                >
+                                    {forgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
+                                    {t("sendResetLink")}
+                                </Button>
+                            </form>
+                        )}
+                        <Button
+                            variant="ghost"
+                            className={`w-full gap-2 ${buttonTransition}`}
+                            onClick={() => { setView("login"); setForgotSent(false); setForgotEmail(""); setForgotLoading(false); }}
+                            type="button"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            {t("backToLogin")}
+                        </Button>
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="space-y-1 text-center">
+                        <div className="mx-auto mb-4 flex justify-center">
+                            <Logo className="h-12 w-12" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {isLoginView ? t("welcomeBack") : t("createAccount")}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {isLoginView ? t("signInDesc") : t("signUpDesc")}
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                        {socialLoginEnabled && (
+                            <>
+                                <div className="flex flex-col gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className={`w-full ${buttonTransition} hover:scale-[1.02] active:scale-[0.98]`}
+                                        onClick={() => handleSignInWith("google")}
+                                        disabled={anySocialLoading}
+                                    >
+                                        {loadingGoogle ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                                        ) : (
+                                            <GoogleIcon className="mr-2 h-4 w-4 shrink-0" />
+                                        )}
+                                        <span>{isLoginView ? t("signInWithGoogle") : t("signUpWithGoogle")}</span>
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className={`w-full bg-[#1877F2] hover:bg-[#166FE5] hover:scale-[1.02] active:scale-[0.98] text-white border-[#1877F2] ${buttonTransition}`}
+                                        onClick={() => handleSignInWith("facebook")}
+                                        disabled={anySocialLoading}
+                                    >
+                                        {loadingMeta ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                                        ) : (
+                                            <MetaIcon className="mr-2 h-4 w-4 shrink-0" />
+                                        )}
+                                        <span>{isLoginView ? t("signInWithFacebook") : t("signUpWithFacebook")}</span>
+                                    </Button>
+                                </div>
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t border-border" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase text-muted-foreground">
+                                        <span className="bg-background px-2">{t("orContinueWith")}</span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        <form action={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">{t("email")}</Label>
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    placeholder={t("emailPlaceholder")}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">{t("password")}</Label>
+                                    {isLoginView && (
+                                        <button
+                                            type="button"
+                                            className="text-xs font-normal text-primary hover:underline"
+                                            onClick={() => setView("forgot")}
+                                        >
+                                            {t("forgotPassword")}
+                                        </button>
+                                    )}
+                                </div>
+                                <Input id="password" name="password" type="password" required />
+                            </div>
+                            <Button
+                                className={`w-full ${buttonTransition} hover:scale-[1.01] active:scale-[0.99]`}
+                                type="submit"
+                                disabled={isLoading || anySocialLoading}
+                            >
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
+                                <span className="truncate">{isLoginView ? t("signIn") : t("register")}</span>
+                            </Button>
+                        </form>
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground text-center">
+                                {isLoginView ? t("noAccount") : t("hasAccount")}
+                            </p>
+                            <Button
+                                variant="outline"
+                                className={`w-full ${buttonTransition} hover:scale-[1.01] active:scale-[0.99]`}
+                                onClick={() => setView(isLoginView ? "signup" : "login")}
+                                disabled={isLoading || anySocialLoading}
+                                type="button"
+                            >
+                                {isLoginView ? t("createAccount") : t("signInInstead")}
+                            </Button>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+export default function LoginForm({ initialView }: { initialView?: View }) {
+    const [view, setView] = useState<View>(initialView ?? "login");
     const [isLoading, setIsLoading] = useState(false);
-    const [isLoginView, setIsLoginView] = useState(true);
     const [socialLoginEnabled, setSocialLoginEnabled] = useState(true);
     const [loadingGoogle, setLoadingGoogle] = useState(false);
     const [loadingMeta, setLoadingMeta] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotSent, setForgotSent] = useState(false);
+    const isLoginView = view === "login";
     const params = useParams();
     const locale = (params?.locale as string) || "en";
     const t = useTranslations("Auth");
-    const tLanding = useTranslations("Landing");
 
     useEffect(() => {
         setSocialLoginEnabled(getSocialLoginEnabled());
     }, []);
+
+    const [mobileAuthOpen, setMobileAuthOpen] = useState(false);
+    useEffect(() => {
+        if (!mobileAuthOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [mobileAuthOpen]);
 
     async function handleSubmit(formData: FormData) {
         setIsLoading(true);
@@ -90,154 +316,124 @@ export default function LoginForm() {
         }
     }
 
+    const redirectToUpdatePassword = typeof window !== "undefined" ? `${window.location.origin}/${locale}/auth/update-password` : "";
+    async function handleForgotSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!forgotEmail.trim()) return;
+        setForgotLoading(true);
+        const supabase = createClient();
+        const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo: redirectToUpdatePassword });
+        setForgotLoading(false);
+        if (error) {
+            toast.error(t("forgotPasswordError"));
+            return;
+        }
+        setForgotSent(true);
+        toast.success(t("resetLinkSent"));
+    }
+
+    const isForgotView = view === "forgot";
+
+    const openAuth = (v: View) => {
+        setView(v);
+        setMobileAuthOpen(true);
+    };
+
+    const authFormBodyProps = {
+        view,
+        setView,
+        t,
+        isForgotView,
+        forgotSent,
+        forgotEmail,
+        setForgotEmail,
+        setForgotSent,
+        forgotLoading,
+        setForgotLoading,
+        handleForgotSubmit,
+        isLoginView,
+        socialLoginEnabled,
+        anySocialLoading,
+        loadingGoogle,
+        loadingMeta,
+        handleSignInWith,
+        handleSubmit,
+        isLoading,
+    };
+
     return (
-        <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-            <div className="flex w-full flex-col shrink-0 lg:w-[480px] lg:min-h-screen lg:border-r lg:border-border lg:sticky lg:top-0">
-                <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-                    <div className="w-full max-w-[400px]">
-                        <Card className="shadow-lg border-border">
-                            <CardHeader className="space-y-1 text-center">
-                                <div className="mx-auto mb-4 flex justify-center">
-                                    <Logo className="h-12 w-12" />
-                                </div>
-                                <CardTitle className="text-2xl font-bold tracking-tight">
-                                    {isLoginView ? t("welcomeBack") : t("createAccount")}
-                                </CardTitle>
-                                <CardDescription>
-                                    {isLoginView ? t("signInDesc") : t("signUpDesc")}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {socialLoginEnabled && (
-                                    <>
-                                        <div className="flex flex-col gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className={`w-full ${buttonTransition} hover:scale-[1.02] active:scale-[0.98]`}
-                                                onClick={() => handleSignInWith("google")}
-                                                disabled={anySocialLoading}
-                                            >
-                                                {loadingGoogle ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
-                                                ) : (
-                                                    <GoogleIcon className="mr-2 h-4 w-4 shrink-0" />
-                                                )}
-                                                <span>{isLoginView ? t("signInWithGoogle") : t("signUpWithGoogle")}</span>
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className={`w-full bg-[#1877F2] hover:bg-[#166FE5] hover:scale-[1.02] active:scale-[0.98] text-white border-[#1877F2] ${buttonTransition}`}
-                                                onClick={() => handleSignInWith("facebook")}
-                                                disabled={anySocialLoading}
-                                            >
-                                                {loadingMeta ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
-                                                ) : (
-                                                    <MetaIcon className="mr-2 h-4 w-4 shrink-0" />
-                                                )}
-                                                <span>{isLoginView ? t("signInWithFacebook") : t("signUpWithFacebook")}</span>
-                                            </Button>
-                                        </div>
-                                        <div className="relative">
-                                            <div className="absolute inset-0 flex items-center">
-                                                <span className="w-full border-t border-border" />
-                                            </div>
-                                            <div className="relative flex justify-center text-xs uppercase text-muted-foreground">
-                                                <span className="bg-card px-2">{t("orContinueWith")}</span>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                                <form action={handleSubmit} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">{t("email")}</Label>
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            placeholder={t("emailPlaceholder")}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="password">{t("password")}</Label>
-                                            {isLoginView && (
-                                                <Link href="/auth/forgot-password" className="text-xs font-normal text-primary hover:underline">
-                                                    {t("forgotPassword")}
-                                                </Link>
-                                            )}
-                                        </div>
-                                        <Input id="password" name="password" type="password" required />
-                                    </div>
-                                    <Button
-                                        className={`w-full ${buttonTransition} hover:scale-[1.01] active:scale-[0.99]`}
-                                        type="submit"
-                                        disabled={isLoading || anySocialLoading}
-                                    >
-                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
-                                        <span className="truncate">{isLoginView ? t("signIn") : t("register")}</span>
-                                    </Button>
-                                </form>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-4">
-                                <div className="text-sm text-muted-foreground text-center w-full">
-                                    {isLoginView ? t("noAccount") : t("hasAccount")}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    className={`w-full ${buttonTransition} hover:scale-[1.01] active:scale-[0.99]`}
-                                    onClick={() => setIsLoginView(!isLoginView)}
-                                    disabled={isLoading || anySocialLoading}
-                                    type="button"
-                                >
-                                    {isLoginView ? t("createAccount") : t("signInInstead")}
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    </div>
+        <div className="flex min-h-screen flex-col bg-background lg:flex-row lg:h-screen lg:overflow-hidden">
+            {/* Mobile: semi-header with logo + app name + Log in / Create account */}
+            <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
+                <div className="flex items-center gap-2">
+                    <Logo className="h-8 w-8 shrink-0" />
+                    <span className="text-lg font-semibold tracking-tight text-foreground">GetSign</span>
                 </div>
+                <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => openAuth("login")}>
+                        {t("signIn")}
+                    </Button>
+                    <Button size="sm" onClick={() => openAuth("signup")}>
+                        {t("createAccount")}
+                    </Button>
+                </div>
+            </header>
+
+            {/* Desktop: auth column (hidden on mobile) */}
+            <div className="hidden w-full flex-col shrink-0 lg:flex lg:w-[480px] lg:h-screen lg:border-r lg:border-border">
+                <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
+                    <AuthFormBody {...authFormBodyProps} />
+                </div>
+                <AuthFooter />
             </div>
 
+            {/* Landing: full width on mobile, 2/3 on desktop */}
             <div className="flex flex-1 flex-col min-h-0 overflow-y-auto w-full lg:min-h-screen">
-                <div className="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 xl:px-16">
-                    <div className="max-w-lg">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Logo className="h-10 w-10 sm:h-12 sm:w-12" />
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl xl:text-4xl">
-                                GetSign
-                            </h1>
-                        </div>
-                        <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-                            {tLanding("tagline")}
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                            {tLanding("heroDescription")}
-                        </p>
-                    </div>
-                </div>
-                <footer className="border-t border-border px-4 py-4 sm:px-6 lg:px-8 xl:px-16">
-                    <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground sm:gap-x-6 sm:text-sm">
-                        <Link href="/about" className="hover:text-foreground transition-colors">
-                            {tLanding("footerAbout")}
-                        </Link>
-                        <Link href="/privacy" className="hover:text-foreground transition-colors">
-                            {tLanding("footerPrivacy")}
-                        </Link>
-                        <Link href="/cookies" className="hover:text-foreground transition-colors">
-                            {tLanding("footerCookies")}
-                        </Link>
-                        <Link href="/terms" className="hover:text-foreground transition-colors">
-                            {tLanding("footerTerms")}
-                        </Link>
-                        <Link href="/docs" className="hover:text-foreground transition-colors">
-                            {tLanding("footerDocumentation")}
-                        </Link>
-                    </nav>
+                <LandingContent onOpenAuth={openAuth} />
+                <footer className="lg:hidden shrink-0 border-t border-border bg-background">
+                    <AuthFooter />
                 </footer>
             </div>
+
+            {/* Mobile: slide-up auth overlay */}
+            {mobileAuthOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex flex-col lg:hidden"
+                    aria-modal="true"
+                    role="dialog"
+                >
+                    <button
+                        type="button"
+                        aria-label="Close"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                        onClick={() => setMobileAuthOpen(false)}
+                    />
+                    <div
+                        className="relative mt-auto flex max-h-[90vh] flex-col rounded-t-2xl border-t border-border bg-background shadow-2xl animate-in slide-in-from-bottom duration-300 ease-out"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {isForgotView ? t("forgotPasswordTitle") : isLoginView ? t("signIn") : t("createAccount")}
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 rounded-full"
+                                onClick={() => setMobileAuthOpen(false)}
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </div>
+                        <div className="overflow-y-auto px-4 py-6">
+                            <div className="flex flex-col items-center">
+                                <AuthFormBody {...authFormBodyProps} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

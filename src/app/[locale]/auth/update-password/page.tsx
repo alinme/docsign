@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -12,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import Logo from "@/components/logo/Logo";
+import { AuthFooter } from "@/components/auth/AuthFooter";
 
 const buttonTransition = "transition-all duration-200 ease-out";
 
@@ -70,40 +70,39 @@ export default function UpdatePasswordPage() {
 
     if (!ready) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background px-4">
-                <Card className="w-full max-w-[400px] shadow-lg border-border">
-                    <CardHeader className="space-y-1 text-center">
+            <div className="flex min-h-screen flex-col bg-background">
+                <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+                    <div className="w-full max-w-[400px] space-y-6 text-center">
                         <div className="mx-auto mb-4 flex justify-center">
                             <Logo className="h-12 w-12" />
                         </div>
-                        <CardTitle className="text-xl">{t("updatePasswordTitle")}</CardTitle>
-                        <CardDescription>{t("updatePasswordError")}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                        <h2 className="text-xl font-bold">{t("updatePasswordTitle")}</h2>
+                        <p className="text-sm text-muted-foreground">{t("updatePasswordError")}</p>
                         <Button asChild className={`w-full ${buttonTransition}`}>
                             <Link href="/auth/login">{t("backToLogin")}</Link>
                         </Button>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
+                <AuthFooter />
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-            <Card className="w-full max-w-[400px] shadow-lg border-border">
-                <CardHeader className="space-y-1 text-center">
-                    <div className="mx-auto mb-4 flex justify-center">
-                        <Logo className="h-12 w-12" />
+        <div className="flex min-h-screen flex-col bg-background">
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+                <div className="w-full max-w-[400px] space-y-6">
+                    <div className="space-y-1 text-center">
+                        <div className="mx-auto mb-4 flex justify-center">
+                            <Logo className="h-12 w-12" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {t("updatePasswordTitle")}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {t("updatePasswordDesc")}
+                        </p>
                     </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">
-                        {t("updatePasswordTitle")}
-                    </CardTitle>
-                    <CardDescription>
-                        {t("updatePasswordDesc")}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="password">{t("newPassword")}</Label>
@@ -138,8 +137,9 @@ export default function UpdatePasswordPage() {
                             {t("updatePassword")}
                         </Button>
                     </form>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
+            <AuthFooter />
         </div>
     );
 }
