@@ -1,50 +1,52 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { headers } from "next/headers";
+import { routing } from "@/i18n/routing";
+import { hasLocale } from "next-intl";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "DocSign | Secure Document Signing",
-  description: "A fast, secure, and intuitive document signing platform.",
-};
-
 export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const messages = await getMessages();
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <NextIntlClientProvider messages={messages}>
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
-            <Toaster />
-          </NextIntlClientProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+    children,
+}: Readonly<{ children: React.ReactNode }>) {
+    const headersList = await headers();
+    const localeHeader = headersList.get("x-next-intl-locale");
+    const locale = hasLocale(routing.locales, localeHeader) ? localeHeader : routing.defaultLocale;
+
+    return (
+        <html lang={locale || "en"} suppressHydrationWarning>
+            <head>
+                <meta name="apple-mobile-web-app-title" content="GetSign" />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "SoftwareApplication",
+                            "name": "GetSign.app",
+                            "operatingSystem": "Web",
+                            "applicationCategory": "BusinessApplication",
+                            "description": "Effortless E-Signatures & Document Signing online.",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0",
+                                "priceCurrency": "USD",
+                            },
+                        }),
+                    }}
+                />
+            </head>
+            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+                {children}
+            </body>
+        </html>
+    );
 }

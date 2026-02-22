@@ -8,7 +8,20 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { revalidatePath } from "next/cache";
 import { DEFAULT_SIGNATURE_COLOR } from "@/lib/signature";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+function getBaseUrl(): string {
+    if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+    const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+    if (domain) return `https://${domain.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+    return "http://localhost:3000";
+}
+
+/** Base URL used in email links. Set EMAIL_BASE_URL=http://localhost:3000 in .env.local for local testing so links point to localhost. */
+function getEmailBaseUrl(): string {
+    if (process.env.EMAIL_BASE_URL) return process.env.EMAIL_BASE_URL.replace(/\/$/, "");
+    return getBaseUrl();
+}
+
+const BASE_URL = getBaseUrl();
 const DOWNLOAD_LINK_EXPIRY_DAYS = 7;
 const DOWNLOAD_LINK_EXPIRY_SECONDS = DOWNLOAD_LINK_EXPIRY_DAYS * 24 * 60 * 60;
 
@@ -44,16 +57,20 @@ async function auditLog(
 const resendUrl = process.env.RESEND_API_KEY!;
 const resend = new Resend(resendUrl);
 
-const RESEND_TEST_FROM = "DocSign <onboarding@resend.dev>";
+const RESEND_TEST_FROM = "GetSign <onboarding@resend.dev>";
 
 function isResendTestMode(): boolean {
     return process.env.NODE_ENV !== "production";
 }
 
-/** Use Resend's test sender when domain isn't verified (e.g. localhost). Set RESEND_FROM to override. */
+/** Sender for Resend. RESEND_FROM overrides. Else RESEND_FROM_NAME + RESEND_FROM_EMAIL, or default from domain. */
 function getResendFrom(): string {
     if (process.env.RESEND_FROM) return process.env.RESEND_FROM;
-    return isResendTestMode() ? RESEND_TEST_FROM : "DocSign <noreply@docsign.app>";
+    const name = process.env.RESEND_FROM_NAME || "GetSign";
+    const email = process.env.RESEND_FROM_EMAIL;
+    if (email) return `${name} <${email}>`;
+    const domain = process.env.NEXT_PUBLIC_APP_DOMAIN?.replace(/^https?:\/\//, "") || "getsign.app";
+    return isResendTestMode() ? RESEND_TEST_FROM : `${name} <noreply@${domain}>`;
 }
 
 /** When using Resend's test domain, only RESEND_EMAIL can receive. Redirect "to" in test mode. */
@@ -234,7 +251,7 @@ export async function uploadDocument(formData: FormData) {
                     from: getResendFrom(),
                     to: getResendTo(signer.email),
                     subject: `${initiatorName} requested your signature`,
-                    html: `<p>Hello ${signer.name},</p><p>${initiatorName} has requested your signature on the document &quot;${finalFileOriginalName}&quot;.</p><p><a href="${BASE_URL}/sign/${docData.id}?signer=${signer.id}">Click here to sign</a></p>`,
+                    html: `<p>Hello ${signer.name},</p><p>${initiatorName} has requested your signature on the document &quot;${finalFileOriginalName}&quot;.</p><p><a href="${getEmailBaseUrl()}/sign/${docData.id}?signer=${signer.id}">Click here to sign</a></p>`,
                 })
             ));
             signers.forEach((signer: any) => {
@@ -247,7 +264,7 @@ export async function uploadDocument(formData: FormData) {
                     from: getResendFrom(),
                     to: getResendTo(initiatorEmail),
                     subject: `Copy: You sent "${finalFileOriginalName}" for signature`,
-                    html: `<p>Hi ${initiatorName},</p><p>You sent the document &quot;${finalFileOriginalName}&quot; to: ${signerList}.</p><p>They will receive their signing links by email.</p><p><a href="${BASE_URL}/documents">View in DocSign</a></p>`,
+                    html: `<p>Hi ${initiatorName},</p><p>You sent the document &quot;${finalFileOriginalName}&quot; to: ${signerList}.</p><p>They will receive their signing links by email.</p><p><a href="${getEmailBaseUrl()}/documents">View in GetSign</a></p>`,
                 }).catch((e) => console.warn("Resend copy-to-host failed:", e));
                 auditLog(docData.id, "EMAIL_SENT", initiatorEmail, { details: { to: initiatorEmail, event: "copy_to_host" } }).catch(() => {});
             }
@@ -528,7 +545,7 @@ export async function finalizeSignature(
                     from: getResendFrom(),
                     to: getResendTo(initiatorEmail),
                     subject: `${currentSignerName} signed: ${docName}`,
-                    html: `<p>Hi ${initiatorName},</p><p><strong>${currentSignerName}</strong> has signed the document &quot;${docName}&quot;.</p><p><a href="${BASE_URL}/documents">View in DocSign</a></p>`,
+                    html: `<p>Hi ${initiatorName},</p><p><strong>${currentSignerName}</strong> has signed the document &quot;${docName}&quot;.</p><p><a href="${getEmailBaseUrl()}/documents">View in GetSign</a></p>`,
                 }).catch((e) => console.warn("Resend notify initiator failed:", e));
                 auditLog(documentId, "EMAIL_SENT", initiatorEmail, { details: { to: initiatorEmail, event: "signer_signed_notify_host" } }).catch(() => {});
             }
@@ -539,7 +556,7 @@ export async function finalizeSignature(
                         from: getResendFrom(),
                         to: getResendTo(s.email),
                         subject: `${currentSignerName} signed — what are you waiting for?`,
-                        html: `<p>Hello ${s.name || "there"},</p><p><strong>${currentSignerName}</strong> has signed the document &quot;${docName}&quot;.</p><p><a href="${BASE_URL}/sign/${documentId}?signer=${s.id}">Click here to sign</a></p>`,
+                        html: `<p>Hello ${s.name || "there"},</p><p><strong>${currentSignerName}</strong> has signed the document &quot;${docName}&quot;.</p><p><a href="${getEmailBaseUrl()}/sign/${documentId}?signer=${s.id}">Click here to sign</a></p>`,
                     }).catch((e) => console.warn("Resend nudge failed:", e));
                     auditLog(documentId, "EMAIL_SENT", initiatorEmail, { details: { to: s.email, event: "nudge_other_signer" } }).catch(() => {});
                 }
@@ -551,7 +568,7 @@ export async function finalizeSignature(
                 const { data: urlData } = await supabaseServer.storage
                     .from("documents")
                     .createSignedUrl(finalizedPath, DOWNLOAD_LINK_EXPIRY_SECONDS);
-                const downloadUrl = urlData?.signedUrl || `${BASE_URL}/document/${documentId}`;
+                const downloadUrl = urlData?.signedUrl || `${getEmailBaseUrl()}/document/${documentId}`;
 
                 await auditLog(documentId, "DOCUMENT_COMPLETED", currentSignerEmail, { details: { all_signed: true } });
 
@@ -670,7 +687,7 @@ export async function emailDocumentSigners(documentId: string) {
 
         const signers = document.signers || [];
         const initiatorName = document.initiator_name || document.initiator_email || "Someone";
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const baseUrl = getEmailBaseUrl();
 
         if (!resendUrl) return { error: "Email is not configured." };
         await Promise.all(signers.map((signer: any) =>

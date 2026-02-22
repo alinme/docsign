@@ -1,0 +1,26 @@
+1. Monetization (Stripe / Billing) 💳
+Right now, the app is entirely free. You need a monetization engine.
+
+Pointer: Integrate Stripe. Create a free tier (e.g., 3 documents/month) and a "Pro" plan for unlimited documents, custom branding, and larger file sizes.
+2. Automated Reminders (Cron Jobs) ⏰
+You currently have a manual "Remind Signers" button, which is great! But users forget to log in and click it.
+
+Pointer: Set up a daily cron job (using Vercel Cron or Supabase Edge Functions). Have the system automatically detect documents expiring in 48 hours and automatically fire a Resend email nudging the pending signers.
+3. Team Workspaces (B2B Growth) 🏢
+Currently, documents and templates are tied directly to an initiator_email. If a company signs up, they will want their HR and Sales teams to share the same templates.
+
+Pointer: Add a workspaces or teams table to Supabase. Allow users to invite colleagues to their workspace so they can collaborate on templates and view their team's centralized audit log.
+4. Advanced Security (Signer 2FA) 🔐
+While signature links sent via email are standard, higher-end legal agreements require stricter identity verification.
+
+Pointer: When a user creates a document, give them an option to require "Signer 2FA". When the signer clicks the link, prompt them to enter a password (set by the sender) or an SMS code before the PDF is decrypted and shown.
+5. Advanced PDF Fields & Attachments 📎
+You have the core fields (Signature, Date, Text, Checkbox) working well with pdf-lib.
+
+Pointer: Add "Dropdowns" and "Radio Buttons." More importantly, add an "Attachment Request" field. Often, signers need to append a picture of their Driver's License/ID or a voided check before the signature is considered complete.
+6. Public Webhooks & API (Enterprise Tier) 🚀
+Businesses love to automate document generation (e.g., automatically sending an NDA when someone fills out a form on their website).
+
+Pointer: Add a "Developer Settings" tab where users can generate a GetSign API key and configure webhook URLs to receive automatic POST requests the second a document becomes "Completed."
+7. Bulk Sending (Growth Hack) 📨
+Pointer: Allow users to upload a .csv of 100 names and emails, select a Template, and instantly fire off 100 uniquely tracked signature requests at once.

@@ -12,6 +12,6 @@
 
 ## Decisions
 
-- **Settings toggle:** "Enable social sign-in on login page" — persisted to `user_metadata` and cookie `docsign_social_login_enabled` so the login page can hide/show social buttons when user is not logged in (default: show).
+- **Settings toggle:** "Enable social sign-in on login page" — persisted to `user_metadata` and cookie `getsign_social_login_enabled` so the login page can hide/show social buttons when user is not logged in (default: show).
 - **Login page:** Left column fixed (sign-in/sign-up card); right column scrollable (landing copy + footer with About, Privacy, Cookies, Terms, Documentation as links; pages created later).
 - **i18n:** All new strings in `messages/en.json` under `Auth`, `Settings`, and `Landing`.

@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -9,6 +8,7 @@ import { Home, FileText, Settings, Files, Plus, HelpCircle, Search, MoreVertical
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/logo/Logo";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -44,10 +44,11 @@ export function Sidebar() {
         <div className="flex h-full w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
             {/* Logo Header */}
             <div className="flex h-14 items-center gap-2 px-4">
-                <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
-                    D
+                <Logo className="w-8 h-8" />
+                <div className="flex flex-col gap-0">
+                    <span className="font-semibold text-sm">{t("docSignInc")}</span>
+                    <span className="text-xs text-sidebar-foreground/50">{t("application")}</span>
                 </div>
-                <span className="font-semibold text-sm">{t("docSignInc")}</span>
             </div>
 
             {/* Quick Create CTA */}
@@ -67,13 +68,14 @@ export function Sidebar() {
                 </div>
                 <nav className="space-y-0.5">
                     {navigation.map((item) => {
-                        let isActive = pathname === item.href;
+                        const path = pathname || "";
+                        let isActive = path === item.href;
                         if (item.href === "/") {
-                            isActive = pathname === "/";
+                            isActive = path === "/";
                         } else if (item.href === "/documents") {
-                            isActive = pathname.startsWith("/documents") || pathname.startsWith("/document/") || pathname === "/new";
+                            isActive = path.startsWith("/documents") || path.startsWith("/document/") || path === "/new";
                         } else {
-                            isActive = pathname.startsWith(item.href);
+                            isActive = path.startsWith(item.href);
                         }
                         return (
                             <Link

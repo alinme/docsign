@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, FileText, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchDocuments } from "@/actions/documents";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "next-intl";
 

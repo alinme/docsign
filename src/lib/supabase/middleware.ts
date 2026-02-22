@@ -35,15 +35,23 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // Protect dashboard routes
+    const pathname = request.nextUrl.pathname
+    const segments = pathname.split('/').filter(Boolean)
+    const localeSegment = segments[0]
+    const isLocale = localeSegment === 'en' || localeSegment === 'ro'
+    const locale = isLocale ? localeSegment : 'en'
+    const pathWithoutLocale = isLocale ? '/' + segments.slice(1).join('/') : pathname
+
     if (
         !user &&
-        !request.nextUrl.pathname.startsWith('/auth/login') &&
-        !request.nextUrl.pathname.startsWith('/sign/')
+        !pathWithoutLocale.startsWith('/auth/login') &&
+        !pathWithoutLocale.startsWith('/auth/callback') &&
+        !pathWithoutLocale.startsWith('/auth/forgot-password') &&
+        !pathWithoutLocale.startsWith('/auth/update-password') &&
+        !pathWithoutLocale.startsWith('/sign/')
     ) {
-        // No user, and not on a public route, redirect to login
         const url = request.nextUrl.clone()
-        url.pathname = '/auth/login'
+        url.pathname = `/${locale}/auth/login`
         return NextResponse.redirect(url)
     }
 
