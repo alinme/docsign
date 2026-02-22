@@ -98,8 +98,9 @@
   --accent: oklch(0.269 0.042 264.695);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
-  --border: oklch(0.269 0.042 264.695);
-  --input: oklch(0.269 0.042 264.695);
+  /* Lighter than card so borders/separators/outline buttons are visible on card in dark mode */
+  --border: oklch(0.4 0.042 264.695);
+  --input: oklch(0.38 0.042 264.695);
   --ring: oklch(0.439 0.042 264.695);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);

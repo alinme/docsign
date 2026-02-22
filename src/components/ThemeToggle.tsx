@@ -5,19 +5,50 @@ import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export function ModeToggle() {
     const { theme, setTheme } = useTheme()
+    const [rotating, setRotating] = React.useState(false)
+    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+    const handleClick = () => {
+        setRotating(true)
+        const nextTheme = theme === "dark" ? "light" : "dark"
+        timeoutRef.current = setTimeout(() => {
+            setTheme(nextTheme)
+            setRotating(false)
+        }, 400)
+    }
+
+    React.useEffect(() => {
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        }
+    }, [])
+
+    const isDark = theme === "dark"
 
     return (
         <Button
             variant="outline"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={handleClick}
+            className="shrink-0"
+            aria-label="Toggle theme"
         >
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
+            <span
+                className={cn(
+                    "inline-flex items-center justify-center transition-transform duration-[400ms] ease-out",
+                    rotating && "rotate-[360deg]"
+                )}
+            >
+                {isDark ? (
+                    <Moon className="h-[1.2rem] w-[1.2rem]" />
+                ) : (
+                    <Sun className="h-[1.2rem] w-[1.2rem]" />
+                )}
+            </span>
         </Button>
     )
 }

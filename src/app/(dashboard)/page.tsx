@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Plus, FileText, CheckCircle2, Clock, XCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import { getRecentDocuments, deleteDocument } from "@/actions/documents";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -16,23 +16,24 @@ export default async function DashboardPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
                     <p className="text-muted-foreground">Manage your documents and track signature statuses securely.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Link href="/templates/new">
-                        <Button variant="outline">
+                    <Button asChild variant="outline" size="lg" className="gap-2">
+                        <Link href="/templates/new" className="gap-2">
+                            <FileText className="h-4 w-4" />
                             Create Template
-                        </Button>
-                    </Link>
-                    <Link href="/new">
-                        <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                        </Link>
+                    </Button>
+                    <Button asChild size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Link href="/new" className="gap-2">
                             <Plus className="h-4 w-4" />
                             New Document
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
@@ -74,50 +75,56 @@ export default async function DashboardPage() {
                     <CardTitle>Recent Documents</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative w-full overflow-auto">
-                        {error && <div className="p-4 text-red-500 bg-red-50 rounded-md">Failed to load documents: {error}</div>}
+                    {error && <div className="p-4 text-destructive bg-destructive/10 rounded-md">Failed to load documents: {error}</div>}
 
-                        <table className="w-full caption-bottom text-sm">
-                            <thead className="[&_tr]:border-b">
-                                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Document Name</th>
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Signer</th>
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date Sent</th>
-                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="[&_tr:last-child]:border-0">
-                                {documents?.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="p-4">
-                                            <EmptyState
-                                                title="No documents yet"
-                                                description="Create your first document to get started."
-                                                icon={FileText}
-                                                actionLabel="New Document"
-                                                actionHref="/new"
-                                            />
-                                        </td>
+                    {!error && (!documents || documents.length === 0) && (
+                        <EmptyState
+                            title="No documents yet"
+                            description="Create your first document to get started."
+                            icon={FileText}
+                            actionLabel="New Document"
+                            actionHref="/new"
+                        />
+                    )}
+
+                    {!error && documents && documents.length > 0 && (
+                        <div className="relative w-full overflow-auto">
+                            <table className="w-full caption-bottom text-sm">
+                                <thead className="[&_tr]:border-b">
+                                    <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Document Name</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Signer(s)</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date Sent</th>
+                                        <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
                                     </tr>
-                                )}
-
-                                {documents?.slice(0, 5).map((doc) => (
+                                </thead>
+                                <tbody className="[&_tr:last-child]:border-0">
+                                {documents.slice(0, 5).map((doc) => (
                                     <tr key={doc.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                         <td className="p-4 align-middle">
                                             <div className="flex items-center gap-3 font-medium">
-                                                <FileText className="h-4 w-4 text-blue-500" />
+                                                <FileText className="h-4 w-4 text-primary" />
                                                 {doc.file_name}
                                             </div>
                                         </td>
-                                        <td className="p-4 align-middle text-muted-foreground">{doc.signer_name} ({doc.signer_email})</td>
+                                        <td className="p-4 align-middle text-muted-foreground">
+                                            {(() => {
+                                                const signers = (doc as any).signers || [];
+                                                const first = signers[0];
+                                                const name = first?.name ?? doc.signer_name;
+                                                const email = first?.email ?? doc.signer_email;
+                                                const extra = signers.length > 1 ? ` +${signers.length - 1}` : "";
+                                                return `${name}${extra} (${email})`;
+                                            })()}
+                                        </td>
                                         <td className="p-4 align-middle">
                                             <Badge
                                                 variant="secondary"
                                                 className={
-                                                    doc.status === "Completed" ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" :
-                                                        doc.status === "Pending" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" :
-                                                            "bg-red-100 text-red-800 hover:bg-red-100"
+                                                    doc.status === "Completed" ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/25" :
+                                                        doc.status === "Pending" ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 hover:bg-amber-500/25" :
+                                                            "bg-red-500/20 text-red-800 dark:text-red-200 hover:bg-red-500/25"
                                                 }
                                             >
                                                 {doc.status}
@@ -127,8 +134,8 @@ export default async function DashboardPage() {
                                         <td className="p-4 align-middle text-right">
                                             <div className="flex justify-end items-center gap-2">
                                                 <Link href={`/document/${doc.id}`}>
-                                                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-                                                        View Details
+                                                    <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-primary hover:bg-primary/15 hover:text-primary hover:border-primary/50" title="View details">
+                                                        <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
                                                 <DeleteButton id={doc.id} onDelete={deleteDocument} itemName="document" />
@@ -136,9 +143,10 @@ export default async function DashboardPage() {
                                         </td>
                                     </tr>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

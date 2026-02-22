@@ -2,10 +2,11 @@ import { getDocumentById, getAuditLogs } from "@/actions/documents";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ArrowLeft, Download, ShieldCheck, Clock, User, CheckCircle2, Plus } from "lucide-react";
+import { FileText, ArrowLeft, Download, ShieldCheck, Clock, User, CheckCircle2, Plus, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CopyLinkButton from "./copy-link-button";
+import { EmailSignersButton } from "@/components/EmailSignersButton";
 
 export default async function DocumentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -14,16 +15,16 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
 
     if (docResult.error || !docResult.data) {
         return (
-            <div className="mx-auto max-w-5xl space-y-8 pb-12">
-                <div className="flex items-center gap-4">
+            <div className="space-y-8 pb-12">
+                <div className="flex items-center gap-4 mb-8">
                     <Link href="/">
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-red-900">Document Not Found</h1>
-                        <p className="text-sm text-red-500">Error: {docResult.error || "The document you are looking for has been deleted or does not exist."}</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-destructive">Document Not Found</h1>
+                        <p className="text-sm text-destructive/90">Error: {docResult.error || "The document you are looking for has been deleted or does not exist."}</p>
                     </div>
                 </div>
             </div>
@@ -34,8 +35,8 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
     const auditLogs = logsResult.data || [];
 
     return (
-        <div className="mx-auto max-w-5xl space-y-8 pb-12">
-            <div className="flex items-center gap-4">
+        <div className="space-y-8 pb-12">
+            <div className="flex items-center gap-4 mb-8">
                 <Link href="/">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                         <ArrowLeft className="h-4 w-4" />
@@ -59,35 +60,35 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
                             <Badge
                                 variant="secondary"
                                 className={
-                                    document.status === "Completed" ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" :
-                                        document.status === "Pending" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" :
-                                            "bg-red-100 text-red-800 hover:bg-red-100"
+                                    document.status === "Completed" ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/25" :
+                                        document.status === "Pending" ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 hover:bg-amber-500/25" :
+                                            "bg-red-500/20 text-red-800 dark:text-red-200 hover:bg-red-500/25"
                                 }
                             >
                                 {document.status}
                             </Badge>
                         </div>
                         <CardContent className="p-0">
-                            <div className="grid grid-cols-2 divide-x divide-y border-b text-sm">
+                            <div className="grid grid-cols-2 divide-x divide-y divide-border border-b border-border text-sm">
                                 <div className="p-4 space-y-1">
-                                    <span className="text-gray-500 font-medium text-xs uppercase tracking-wider">Initiator</span>
-                                    <p className="font-medium text-gray-900 truncate">{document.initiator_name || "Unknown"}</p>
-                                    <p className="text-gray-500 truncate">{document.initiator_email}</p>
+                                    <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Initiator</span>
+                                    <p className="font-medium text-foreground truncate">{document.initiator_name || "Unknown"}</p>
+                                    <p className="text-muted-foreground truncate">{document.initiator_email}</p>
                                     {document.initiator_company && (
-                                        <div className="mt-2 pt-2 border-t">
-                                            <p className="text-xs font-semibold text-gray-700">{document.initiator_company}</p>
-                                            {document.initiator_company_info && <p className="text-xs text-gray-500 whitespace-pre-wrap mt-1">{document.initiator_company_info}</p>}
+                                        <div className="mt-2 pt-2 border-t border-border">
+                                            <p className="text-xs font-semibold text-foreground">{document.initiator_company}</p>
+                                            {document.initiator_company_info && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{document.initiator_company_info}</p>}
                                         </div>
                                     )}
                                 </div>
                                 <div className="p-4 space-y-1">
-                                    <span className="text-gray-500 font-medium text-xs uppercase tracking-wider">Signer</span>
-                                    <p className="font-medium text-gray-900 truncate">{document.signer_name}</p>
-                                    <p className="text-gray-500 truncate">{document.signer_email}</p>
+                                    <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Signer</span>
+                                    <p className="font-medium text-foreground truncate">{document.signer_name}</p>
+                                    <p className="text-muted-foreground truncate">{document.signer_email}</p>
                                     {document.signer_company && (
-                                        <div className="mt-2 pt-2 border-t">
-                                            <p className="text-xs font-semibold text-gray-700">{document.signer_company}</p>
-                                            {document.signer_company_info && <p className="text-xs text-gray-500 whitespace-pre-wrap mt-1">{document.signer_company_info}</p>}
+                                        <div className="mt-2 pt-2 border-t border-border">
+                                            <p className="text-xs font-semibold text-foreground">{document.signer_company}</p>
+                                            {document.signer_company_info && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{document.signer_company_info}</p>}
                                         </div>
                                     )}
                                 </div>
@@ -105,20 +106,22 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
                                 <h3 className="text-sm font-semibold mb-4">Document Actions</h3>
                                 <div className="flex flex-wrap gap-4">
                                     {document.status === "Completed" ? (
-                                        <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-                                            <a href={document.signedUrl} target="_blank" rel="noopener noreferrer">
-                                                <Download className="mr-2 h-4 w-4" />
+                                        <Button asChild size="default" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                                            <a href={document.signedUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
+                                                <Download className="h-4 w-4" />
                                                 Download Final PDF
                                             </a>
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button asChild variant="outline">
-                                                <a href={`/sign/${document.id}`} target="_blank" rel="noopener noreferrer">
+                                            <Button asChild variant="outline" size="default" className="gap-2">
+                                                <a href={`/sign/${document.id}`} target="_blank" rel="noopener noreferrer" className="gap-2 inline-flex items-center">
+                                                    <ExternalLink className="h-4 w-4 shrink-0" />
                                                     View Signing Page
                                                 </a>
                                             </Button>
                                             <CopyLinkButton documentId={document.id} />
+                                            <EmailSignersButton documentId={document.id} />
                                         </>
                                     )}
                                 </div>
@@ -140,26 +143,36 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
                         </div>
                         <CardContent className="flex-1 p-6 relative">
                             {/* Timeline Line Generator */}
-                            <div className="absolute left-10 top-6 bottom-6 w-0.5 bg-gray-100" />
+                            <div className="absolute left-10 top-6 bottom-6 w-0.5 bg-border" />
 
                             <div className="space-y-8 relative">
                                 {auditLogs.length === 0 ? (
-                                    <p className="text-sm text-gray-500">No events recorded.</p>
+                                    <p className="text-sm text-muted-foreground">No events recorded.</p>
                                 ) : (
                                     auditLogs.map((log: any, i: number) => {
                                         const isLast = i === auditLogs.length - 1;
                                         let Icon = User;
-                                        let iconBg = "bg-gray-100 text-gray-500";
+                                        let iconBg = "bg-muted text-muted-foreground";
                                         let message = "System Action";
 
                                         if (log.action === "DOCUMENT_CREATED") {
                                             Icon = Plus;
-                                            iconBg = "bg-blue-100 text-blue-600 ring-4 ring-white";
+                                            iconBg = "bg-primary/20 text-primary ring-4 ring-card";
                                             message = "Document prepared and sent over email.";
                                         } else if (log.action === "DOCUMENT_SIGNED") {
                                             Icon = CheckCircle2;
-                                            iconBg = "bg-emerald-100 text-emerald-600 ring-4 ring-white";
-                                            message = "Document signed electronically via DocSign standard.";
+                                            iconBg = "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-4 ring-card";
+                                            const d = log.details as { signer_name?: string } | null;
+                                            message = d?.signer_name ? `${d.signer_name} signed electronically.` : "Document signed electronically via DocSign standard.";
+                                        } else if (log.action === "EMAIL_SENT") {
+                                            Icon = ShieldCheck;
+                                            iconBg = "bg-amber-500/20 text-amber-600 dark:text-amber-400 ring-4 ring-card";
+                                            const d = log.details as { to?: string; event?: string } | null;
+                                            message = d?.to ? `Email sent to ${d.to}${d.event ? ` (${d.event})` : ""}.` : "Email sent.";
+                                        } else if (log.action === "DOCUMENT_COMPLETED") {
+                                            Icon = CheckCircle2;
+                                            iconBg = "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-4 ring-card";
+                                            message = "All signers completed; download link sent to everyone.";
                                         }
 
                                         return (
@@ -169,14 +182,23 @@ export default async function DocumentDetailsPage({ params }: { params: Promise<
                                                 </div>
                                                 <div className="flex-1 space-y-1 pb-1">
                                                     <div className="flex items-center justify-between">
-                                                        <h3 className="text-sm font-semibold text-gray-900">{log.action.replace("_", " ")}</h3>
-                                                        <time className="text-xs text-gray-500 flex items-center gap-1">
+                                                        <h3 className="text-sm font-semibold text-foreground">{log.action.replace(/_/g, " ")}</h3>
+                                                        <time className="text-xs text-muted-foreground flex items-center gap-1">
                                                             <Clock className="h-3 w-3" />
                                                             {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </time>
                                                     </div>
-                                                    <p className="text-sm text-gray-500">{message}</p>
-                                                    <p className="text-xs text-gray-400 font-mono mt-1">by: {log.actor_email}</p>
+                                                    <p className="text-sm text-muted-foreground">{message}</p>
+                                                    <p className="text-xs text-muted-foreground/80 font-mono mt-1">by: {log.actor_email}</p>
+                                                    {(log.ip_address || (log.details && Object.keys(log.details).length > 0)) && (
+                                                        <p className="text-xs text-muted-foreground/60 mt-0.5 break-all">
+                                                            {log.ip_address && <span className="font-mono">IP: {log.ip_address}</span>}
+                                                            {log.ip_address && log.details && Object.keys(log.details).length > 0 && " · "}
+                                                            {log.details && typeof log.details === "object" && Object.keys(log.details).length > 0 && (
+                                                                <span className="font-mono">{JSON.stringify(log.details)}</span>
+                                                            )}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         );

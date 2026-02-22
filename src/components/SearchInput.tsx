@@ -101,7 +101,7 @@ export function SearchInput() {
                         </div>
                     ) : (
                         <div className="p-6 text-center text-sm text-muted-foreground">
-                            No documents found matching "{query}"
+                            No documents found matching &quot;{query}&quot;
                         </div>
                     )}
                 </div>

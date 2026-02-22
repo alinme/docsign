@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ShieldAlert, Smartphone, PenTool, CheckCircle2, Loader2, FileSignature, Calendar, Type, CheckSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getDocumentById, finalizeSignature } from "@/actions/documents";
+import { DEFAULT_SIGNATURE_COLOR } from "@/lib/signature";
 import { getUserSignature } from "@/actions/signatures";
 import { toast } from "sonner";
 import SignatureCanvas from "react-signature-canvas";
@@ -18,17 +20,23 @@ import "react-pdf/dist/Page/TextLayer.css";
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
 const Document = dynamic(() => import("react-pdf").then((mod) => mod.Document), { ssr: false });
 const Page = dynamic(() => import("react-pdf").then((mod) => mod.Page), { ssr: false });
-const pdfjs = await import("react-pdf").then(mod => mod.pdfjs).catch(() => null);
 
-if (pdfjs) {
-    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-}
-
-export default function SignDocumentPage() {
+function SignDocumentContent() {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
     const currentSignerId = searchParams.get('signer');
+
+    useEffect(() => {
+        import("react-pdf")
+            .then((mod) => mod.pdfjs)
+            .then((pdfjs) => {
+                if (pdfjs?.GlobalWorkerOptions) {
+                    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+                }
+            })
+            .catch(() => {});
+    }, []);
     const sigPad = useRef<SignatureCanvas>(null);
     const supabase = createClient();
 
@@ -76,7 +84,8 @@ export default function SignDocumentPage() {
             } else {
                 setDocument(result.data);
 
-                const currentUser = result.data.signers?.find((s: any) => s.id === currentSignerId);
+                const effectiveId = currentSignerId ?? result.data.signers?.[0]?.id ?? null;
+                const currentUser = result.data.signers?.find((s: any) => s.id === effectiveId);
                 const isUserSigned = currentUser?.status === "Signed" || currentUser?.status === "Completed";
 
                 if (result.data.status === "Completed" || isUserSigned) {
@@ -95,18 +104,29 @@ export default function SignDocumentPage() {
 
         setIsSubmitting(true);
         try {
-            const result = await finalizeSignature(document.id, currentSignerId || '', signatureData, fieldsState);
+            let clientIp: string | null = null;
+            try {
+                const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
+                const data = await res.json();
+                clientIp = data?.ip ?? null;
+            } catch {
+                // ignore
+            }
+            const result = await finalizeSignature(document.id, effectiveSignerId ?? '', signatureData, fieldsState, {
+                clientIp,
+                userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            });
 
             if (result.error) {
                 toast.error(result.error);
             } else {
                 toast.success("Document signed successfully!");
-                // Force a document refresh to bypass the iframe cache and show the burned PDF
+                router.refresh();
                 const refreshedDoc = await getDocumentById(document.id);
                 if (refreshedDoc.data) {
                     setDocument({
                         ...refreshedDoc.data,
-                        signedUrl: `${refreshedDoc.data.signedUrl}&t=${Date.now()}`
+                        signedUrl: refreshedDoc.data.signedUrl ? `${refreshedDoc.data.signedUrl}&t=${Date.now()}` : refreshedDoc.data.signedUrl
                     });
                 }
                 setIsSigned(true);
@@ -120,30 +140,38 @@ export default function SignDocumentPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
     if (!document) return null;
 
+    const effectiveSignerId = currentSignerId ?? document?.signers?.[0]?.id ?? null;
     const myBlocks = Array.isArray(document?.sign_coordinates)
-        ? document.sign_coordinates.filter((b: any) => b.signerId === currentSignerId || !b.signerId)
+        ? document.sign_coordinates.filter((b: any) => b.signerId === effectiveSignerId || !b.signerId)
         : [];
 
     const hasSignatureBlock = myBlocks.some((b: any) => !b.type || b.type === 'signature');
-
     const canSubmit = !isSigned && !isSubmitting && (!hasSignatureBlock || !!signatureData);
 
+    const handleSignLater = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            window.close();
+        } else {
+            router.push("/auth/login");
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-6 shadow-sm">
-                <div className="flex items-center gap-4 text-sm font-medium text-gray-900">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-white font-bold">D</div>
+        <div className="min-h-screen bg-background flex flex-col">
+            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-card px-6 shadow-sm">
+                <div className="flex items-center gap-4 text-sm font-medium text-foreground">
+                    <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground font-bold">D</div>
                     <span>DocSign</span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-gray-600 truncate max-w-[200px] md:max-w-md">{document.file_name}</span>
+                    <span className="text-muted-foreground">|</span>
+                    <span className="text-muted-foreground truncate max-w-[200px] md:max-w-md">{document.file_name}</span>
                 </div>
                 <div className="flex items-center gap-3">
                     {!agreed ? (
@@ -151,15 +179,22 @@ export default function SignDocumentPage() {
                             Review & Agree
                         </Button>
                     ) : (
-                        <Button
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700"
-                            disabled={!canSubmit}
-                            onClick={handleSign}
-                        >
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                            {isSigned ? "Completed" : "Finish Signing"}
-                        </Button>
+                        <>
+                        {canSubmit ? (
+                            <Button variant="outline" size="sm" onClick={handleSignLater}>
+                                Sign later
+                            </Button>
+                            ) : (<></>)}
+                            <Button
+                                size="sm"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                disabled={!canSubmit}
+                                onClick={handleSign}
+                            >
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                {isSigned ? "Completed" : "Finish Signing"}
+                            </Button>
+                        </>
                     )}
                 </div>
             </header>
@@ -168,31 +203,41 @@ export default function SignDocumentPage() {
                 <div className="w-full max-w-4xl space-y-6">
 
                     {!agreed && (
-                        <Card className="flex flex-col items-center justify-center gap-4 p-8 border-blue-200 bg-blue-50 text-center">
-                            <ShieldAlert className="h-12 w-12 text-blue-600 shrink-0" />
+                        <Card className="flex flex-col items-center justify-center gap-4 p-8 border-primary/30 bg-primary/10 text-center">
+                            <ShieldAlert className="h-12 w-12 text-primary shrink-0" />
                             <div>
-                                <h3 className="text-xl font-semibold text-blue-900">{document.initiator_name || document.initiator_email} has requested your signature.</h3>
-                                <p className="mt-2 text-sm text-blue-800/80 max-w-lg mx-auto">
-                                    Please review the document below. By clicking "Review & Agree", you consent to doing business electronically with DocSign.
+                                <h3 className="text-xl font-semibold text-foreground">{document.initiator_name || document.initiator_email} has requested your signature.</h3>
+                                <p className="mt-2 text-sm text-muted-foreground max-w-lg mx-auto">
+                                    Please review the document below. By clicking &quot;Review &amp; Agree&quot;, you consent to doing business electronically with DocSign.
                                 </p>
                             </div>
                         </Card>
                     )}
 
+                    {agreed && !isSigned && (
+                        <Card className="p-4 border-2 border-amber-500/60 bg-amber-500/20 dark:bg-amber-500/30 text-center">
+                            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                                Click each yellow &quot;Sign Here&quot; or &quot;Click to Sign&quot; box on the document below to add your signature, then click Finish Signing.
+                            </p>
+                        </Card>
+                    )}
+
+                    {agreed && !isSigned && <Separator />}
+
                     {isSigned && (
-                        <Card className="flex flex-col items-center justify-center gap-4 p-8 border-emerald-200 bg-emerald-50 text-emerald-800 text-center">
-                            <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+                        <Card className="flex flex-col items-center justify-center gap-4 p-8 border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-center">
+                            <CheckCircle2 className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
                             <div>
                                 <h3 className="text-xl font-bold">Document Successfully Signed</h3>
-                                <p className="text-sm mt-2 text-emerald-700">You and the Initiator will receive an email with the finalized PDF and audit trail.</p>
+                                <p className="text-sm mt-2 text-emerald-700 dark:text-emerald-300">You and the Initiator will receive an email with the finalized PDF and audit trail.</p>
                             </div>
 
                             {isAuthenticated ? (
-                                <Button onClick={() => router.push("/")} className="mt-4 bg-emerald-600 hover:bg-emerald-700">
+                                <Button onClick={() => router.push("/")} className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
                                     Return to Dashboard
                                 </Button>
                             ) : (
-                                <Button onClick={() => router.push("/auth/login")} className="mt-4 bg-emerald-600 hover:bg-emerald-700">
+                                <Button onClick={() => router.push("/auth/login")} className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
                                     Create your own DocSign Account
                                 </Button>
                             )}
@@ -200,41 +245,47 @@ export default function SignDocumentPage() {
                         </Card>
                     )}
 
-                    <Card className="relative min-h-[800px] overflow-hidden bg-white shadow-xl ring-1 ring-gray-900/5">
-                        <div className="relative w-full h-full bg-gray-200 overflow-y-auto flex justify-center py-8" ref={containerRef}>
+                    {(agreed || isSigned) && <Separator />}
+
+                    <Card className="relative min-h-[800px] overflow-hidden bg-card shadow-xl ring-1 ring-border">
+                        <div className="relative w-full h-full bg-muted overflow-y-auto flex justify-center py-8" ref={containerRef}>
                             {document.signedUrl && (
                                 <Document
                                     file={`${document.signedUrl}#view=FitH&toolbar=0&navpanes=0`}
                                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                                     className="shadow-xl"
                                 >
-                                    {Array.from(new Array(numPages), (el, index) => (
-                                        <div key={`page_${index + 1}`} className="mb-4 relative">
+                                    {Array.from(new Array(numPages), (el, index) => {
+                                        const pageWidth = pdfWidth > 800 ? 800 : Math.max(pdfWidth - 64, 300);
+                                        const pageHeight = pageWidth * (11 / 8.5);
+                                        return (
+                                        <div key={`page_${index + 1}`} className="mb-4 relative" style={{ width: pageWidth, height: pageHeight }}>
                                             <Page
                                                 pageNumber={index + 1}
-                                                width={pdfWidth > 800 ? 800 : Math.max(pdfWidth - 64, 300)}
+                                                width={pageWidth}
                                                 renderTextLayer={false}
                                                 renderAnnotationLayer={false}
                                             />
 
-                                            {/* Render Advanced Fields Overlays securely into the DOM matrix */}
-                                            {Array.isArray(document.sign_coordinates) && document.sign_coordinates.map((block: any, i: number) => {
+                                            {/* Render Advanced Fields Overlays only when not yet signed (placeholders hidden after signing) */}
+                                            {!isSigned && Array.isArray(document.sign_coordinates) && document.sign_coordinates.map((block: any, i: number) => {
                                                 const targetPageNum = block.pageNum || numPages;
                                                 if (targetPageNum !== index + 1) return null;
 
-                                                const isMyBlock = block.signerId === currentSignerId || !block.signerId;
+                                                const isMyBlock = block.signerId === effectiveSignerId || !block.signerId;
                                                 if (!isMyBlock) return null;
 
                                                 const fieldType = block.type || 'signature';
+                                                const blockKey = block.id ?? `block-${index}-${i}`;
 
                                                 return (
                                                     <div
-                                                        key={i}
-                                                        className={`absolute z-10 flex items-center justify-center border-2
-                                                            ${fieldType === 'signature' ? 'border-amber-400 bg-amber-50/50 w-48 h-16 cursor-pointer hover:border-amber-500 hover:bg-white/80' : ''}
-                                                            ${fieldType === 'date' ? 'border-gray-400 bg-gray-50/50 w-48 h-12' : ''}
-                                                            ${fieldType === 'text' ? 'border-purple-400 bg-purple-50/50 w-48 h-12' : ''}
-                                                            ${fieldType === 'checkbox' ? 'border-green-400 bg-green-50/50 w-8 h-8' : ''}
+                                                        key={blockKey}
+                                                        className={`absolute z-30 flex items-center justify-center border-2 rounded min-w-[120px]
+                                                            ${fieldType === 'signature' ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/95 w-48 h-16 cursor-pointer hover:border-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/95 shadow-lg ring-2 ring-amber-400/50' : ''}
+                                                            ${fieldType === 'date' ? 'border-border bg-muted/90 dark:bg-muted w-48 h-12' : ''}
+                                                            ${fieldType === 'text' ? 'border-purple-500 bg-purple-100 dark:bg-purple-900/90 w-48 h-12' : ''}
+                                                            ${fieldType === 'checkbox' ? 'border-green-500 bg-green-100 dark:bg-green-900/90 w-8 h-8' : ''}
                                                         `}
                                                         style={{
                                                             left: block.xPct !== undefined ? `${block.xPct * 100}%` : `${block.x}px`,
@@ -244,19 +295,19 @@ export default function SignDocumentPage() {
                                                     >
                                                         {fieldType === 'signature' && (
                                                             !signatureData ? (
-                                                                <div className="flex flex-col items-center justify-center gap-1 text-amber-600 pointer-events-none">
+                                                                <div className="flex flex-col items-center justify-center gap-1 text-amber-900 dark:text-amber-100 pointer-events-none font-medium">
                                                                     <PenTool className="h-5 w-5" />
-                                                                    <span className="font-medium text-xs">Click to Sign</span>
+                                                                    <span className="text-xs font-semibold">Click to Sign</span>
                                                                 </div>
                                                             ) : signatureData === "pending_interaction" ? (
-                                                                <span className="text-amber-600 font-medium text-xs">Waiting...</span>
+                                                                <span className="text-amber-900 dark:text-amber-100 font-medium text-xs">Waiting...</span>
                                                             ) : (
                                                                 <img src={signatureData} alt="Signature" className="max-h-12 w-full object-contain pointer-events-none" />
                                                             )
                                                         )}
 
                                                         {fieldType === 'date' && (
-                                                            <span className="text-gray-700 font-medium text-sm">
+                                                            <span className="text-foreground font-medium text-sm">
                                                                 {(fieldsState[block.id] as string) || new Date().toLocaleDateString()}
                                                             </span>
                                                         )}
@@ -264,7 +315,7 @@ export default function SignDocumentPage() {
                                                         {fieldType === 'text' && (
                                                             <input
                                                                 type="text"
-                                                                className="w-full h-full bg-transparent border-none focus:ring-0 text-center text-sm px-2 text-purple-900 placeholder:text-purple-300"
+                                                                className="w-full h-full bg-transparent border-none focus:ring-0 text-center text-sm px-2 text-foreground placeholder:text-muted-foreground"
                                                                 placeholder="Type here..."
                                                                 disabled={isSigned || !agreed}
                                                                 value={fieldsState[block.id] as string || ''}
@@ -275,7 +326,7 @@ export default function SignDocumentPage() {
                                                         {fieldType === 'checkbox' && (
                                                             <input
                                                                 type="checkbox"
-                                                                className="w-5 h-5 text-green-600 rounded cursor-pointer"
+                                                                className="w-5 h-5 text-primary rounded cursor-pointer accent-primary"
                                                                 disabled={isSigned || !agreed}
                                                                 checked={!!fieldsState[block.id]}
                                                                 onChange={(e) => setFieldsState(prev => ({ ...prev, [block.id]: e.target.checked }))}
@@ -285,7 +336,8 @@ export default function SignDocumentPage() {
                                                 );
                                             })}
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </Document>
                             )}
                         </div>
@@ -295,32 +347,31 @@ export default function SignDocumentPage() {
 
             {agreed && !isSigned && signatureData === "pending_interaction" && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <Card className="w-full max-w-lg shadow-2xl overflow-hidden rounded-2xl">
-                        <div className="border-b bg-gray-50 p-4 flex justify-between items-center">
-                            <h2 className="text-lg font-bold">Adopt Your Signature</h2>
-                            <Button variant="ghost" size="sm" onClick={() => setSignatureData(null)}>Cancel</Button>
+                    <Card className="w-full max-w-lg shadow-2xl overflow-hidden rounded-2xl border-border bg-card">
+                        <div className="border-b border-border bg-muted/50 p-4 flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-foreground">Adopt Your Signature</h2>
+                            <Button variant="outline" size="sm" className="border-2 border-border bg-background text-foreground" onClick={() => setSignatureData(null)}>Cancel</Button>
                         </div>
+                        <Separator />
                         <div className="p-6">
                             <Tabs defaultValue={savedSignatureUrl ? "saved" : "draw"}>
-                                <TabsList className={`mb-4 grid w-full ${savedSignatureUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                                <TabsList className={`mb-4 grid w-full border border-border bg-muted/50 ${savedSignatureUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
                                     {savedSignatureUrl && (
-                                        <TabsTrigger value="saved" className="gap-2"><FileSignature className="h-4 w-4" /> Saved</TabsTrigger>
+                                        <TabsTrigger value="saved" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Saved</TabsTrigger>
                                     )}
-                                    <TabsTrigger value="draw">Draw (Desktop)</TabsTrigger>
-                                    <TabsTrigger value="mobile" className="gap-2"><Smartphone className="h-4 w-4" /> Mobile Handoff</TabsTrigger>
+                                    <TabsTrigger value="draw" className="bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Draw (Desktop)</TabsTrigger>
+                                    <TabsTrigger value="mobile" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Mobile Handoff</TabsTrigger>
                                 </TabsList>
 
                                 {savedSignatureUrl && (
                                     <TabsContent value="saved" className="space-y-4">
-                                        <div className="rounded-xl border-2 border-green-500/20 bg-green-50/10 p-6 flex flex-col items-center justify-center">
-                                            <p className="text-sm font-medium text-emerald-700 mb-4">Your saved signature:</p>
-                                            <img src={savedSignatureUrl} alt="Saved Signature" className="max-h-24 object-contain bg-white rounded-lg p-4 shadow-sm border" />
+                                        <div className="rounded-xl border-2 border-border bg-muted/50 p-6 flex flex-col items-center justify-center">
+                                            <p className="text-sm font-medium text-foreground mb-4">Your saved signature:</p>
+                                            <img src={savedSignatureUrl} alt="Saved Signature" className="max-h-24 object-contain bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-sm border-2 border-border" />
                                         </div>
+                                        <Separator />
                                         <div className="flex justify-end gap-3">
-                                            <Button
-                                                className="bg-emerald-600 hover:bg-emerald-700"
-                                                onClick={() => setSignatureData(savedSignatureUrl)}
-                                            >
+                                            <Button className="border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" onClick={() => setSignatureData(savedSignatureUrl)}>
                                                 Adopt and Sign
                                             </Button>
                                         </div>
@@ -328,39 +379,33 @@ export default function SignDocumentPage() {
                                 )}
 
                                 <TabsContent value="draw" className="space-y-4">
-                                    <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 relative overflow-hidden">
+                                    <p className="text-sm text-foreground font-medium">Draw your signature in the box below:</p>
+                                    <div className="rounded-xl border-2 border-border bg-white dark:bg-zinc-900 relative overflow-hidden min-h-[192px]">
                                         <SignatureCanvas
-                                            ref={sigPad}
-                                            penColor="black"
-                                            canvasProps={{ className: "w-full h-48" }}
-                                        />
+                                        ref={sigPad}
+                                        penColor={document?.signature_color ?? DEFAULT_SIGNATURE_COLOR}
+                                        canvasProps={{ className: "w-full h-48 bg-white dark:bg-zinc-900", style: { background: 'white' } }}
+                                    />
                                     </div>
+                                    <Separator />
                                     <div className="flex justify-end gap-3">
-                                        <Button variant="outline" onClick={() => sigPad.current?.clear()}>Clear</Button>
-                                        <Button
-                                            className="bg-blue-600 hover:bg-blue-700"
-                                            onClick={() => {
-                                                if (sigPad.current?.isEmpty()) {
-                                                    toast.error("Please provide a signature first");
-                                                    return;
-                                                }
-                                                const dataURL = sigPad.current?.getTrimmedCanvas().toDataURL("image/png");
-                                                if (dataURL) setSignatureData(dataURL);
-                                            }}
-                                        >
+                                        <Button variant="outline" className="border-2 border-border bg-background text-foreground" onClick={() => sigPad.current?.clear()}>Clear</Button>
+                                        <Button className="border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" onClick={() => {
+                                            if (sigPad.current?.isEmpty()) { toast.error("Please provide a signature first"); return; }
+                                            const dataURL = sigPad.current?.getTrimmedCanvas().toDataURL("image/png");
+                                            if (dataURL) setSignatureData(dataURL);
+                                        }}>
                                             Adopt and Sign
                                         </Button>
                                     </div>
                                 </TabsContent>
 
                                 <TabsContent value="mobile" className="flex flex-col items-center py-8 text-center">
-                                    <div className="mb-4 h-48 w-48 rounded-xl bg-gray-100 flex items-center justify-center border">
-                                        <span className="text-gray-400 text-sm font-mono">[ QR CODE SCAN ]</span>
+                                    <div className="mb-4 h-48 w-48 rounded-xl border-2 border-border bg-muted flex items-center justify-center">
+                                        <span className="text-muted-foreground text-sm font-mono">[ QR CODE SCAN ]</span>
                                     </div>
-                                    <h3 className="font-semibold text-gray-900">Scan to Sign on Mobile</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Point your phone camera at this QR code. Your signature will sync instantly.
-                                    </p>
+                                    <h3 className="font-semibold text-foreground">Scan to Sign on Mobile</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">Point your phone camera at this QR code. Your signature will sync instantly.</p>
                                 </TabsContent>
                             </Tabs>
                         </div>
@@ -368,5 +413,17 @@ export default function SignDocumentPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function SignDocumentPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <SignDocumentContent />
+        </Suspense>
     );
 }
