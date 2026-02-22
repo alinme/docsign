@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Wrench, User, Moon, CheckCircle2, PenTool } from "lucide-react";
+import { Wrench, User, Moon, CheckCircle2, PenTool, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ThemeToggle";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+
+const SOCIAL_LOGIN_COOKIE = "docsign_social_login_enabled";
 
 const SIGNATURE_COLORS = [
     { hex: "#0f172a", label: "Slate" },
@@ -24,11 +26,18 @@ const SIGNATURE_COLORS = [
     { hex: "#171717", label: "Neutral" },
 ] as const;
 
+function setSocialLoginCookie(enabled: boolean) {
+    if (typeof document === "undefined") return;
+    document.cookie = `${SOCIAL_LOGIN_COOKIE}=${enabled};path=/;max-age=31536000`;
+}
+
 export default function SettingsPage() {
     const supabase = createClient();
     const t = useTranslations("Settings");
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [socialLoginEnabled, setSocialLoginEnabled] = useState<boolean>(true);
+    const [socialLoginSaving, setSocialLoginSaving] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -36,10 +45,28 @@ export default function SettingsPage() {
             if (user?.user_metadata?.signature_color) {
                 setSelectedColor(user.user_metadata.signature_color);
             }
+            const enabled = user?.user_metadata?.social_login_enabled !== false;
+            setSocialLoginEnabled(enabled);
+            setSocialLoginCookie(enabled);
             setLoading(false);
         }
         load();
     }, []);
+
+    const handleSocialLoginToggle = async (enabled: boolean) => {
+        setSocialLoginSaving(true);
+        setSocialLoginEnabled(enabled);
+        setSocialLoginCookie(enabled);
+        const { error } = await supabase.auth.updateUser({ data: { social_login_enabled: enabled } });
+        if (error) {
+            toast.error(t("failedToSaveSocialSignIn"));
+            setSocialLoginEnabled(!enabled);
+            setSocialLoginCookie(!enabled);
+        } else {
+            toast.success(t("socialSignInSaved"));
+        }
+        setSocialLoginSaving(false);
+    };
 
     const handleSelectColor = async (hex: string) => {
         setSelectedColor(hex);
@@ -110,6 +137,34 @@ export default function SettingsPage() {
                                 ))}
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Social sign-in toggle */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Share2 className="h-5 w-5 text-muted-foreground" />
+                            {t("socialSignIn")}
+                        </CardTitle>
+                        <CardDescription>
+                            {t("socialSignInDesc")}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between pt-0">
+                        <span className="text-sm font-medium">{t("enableSocialSignIn")}</span>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={socialLoginEnabled}
+                            disabled={socialLoginSaving}
+                            onClick={() => handleSocialLoginToggle(!socialLoginEnabled)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${socialLoginEnabled ? "bg-primary" : "bg-muted"}`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition-transform ${socialLoginEnabled ? "translate-x-5" : "translate-x-0.5"}`}
+                            />
+                        </button>
                     </CardContent>
                 </Card>
 

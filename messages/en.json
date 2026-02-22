@@ -90,7 +90,12 @@
         "googleAuthDesc": "You are securely connected with Google.",
         "manage": "Manage",
         "workspaceComingSoon": "Workspace Settings Coming Soon",
-        "workspaceComingSoonDesc": "In a future update, you will be able to customize your branding, notification preferences, and team members here!"
+        "workspaceComingSoonDesc": "In a future update, you will be able to customize your branding, notification preferences, and team members here!",
+        "socialSignIn": "Social sign-in",
+        "socialSignInDesc": "Show Google and other providers on the login page. When disabled, only email and password are shown.",
+        "enableSocialSignIn": "Enable social sign-in on login page",
+        "socialSignInSaved": "Social sign-in preference saved",
+        "failedToSaveSocialSignIn": "Failed to save preference"
     },
     "Profile": {
         "provideSignatureWarning": "Please provide a signature first",
@@ -242,7 +247,19 @@
         "signUp": "Sign Up",
         "noAccount": "Don't have an account?",
         "hasAccount": "Already have an account?",
-        "signInInstead": "Sign in instead"
+        "signInInstead": "Sign in instead",
+        "signInWithGoogle": "Sign in with Google",
+        "orContinueWith": "Or continue with",
+        "socialSignInError": "Could not sign in with this provider. Please try again."
+    },
+    "Landing": {
+        "tagline": "Secure document signing made simple.",
+        "heroDescription": "Send documents for signature, track status, and keep everything in one place.",
+        "footerAbout": "About",
+        "footerPrivacy": "Privacy",
+        "footerCookies": "Cookies",
+        "footerTerms": "Terms",
+        "footerDocumentation": "Documentation"
     },
     "Sign": {
         "failedToLoad": "Failed to load document",
