@@ -5,11 +5,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/actions/auth";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export async function Navbar() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const email = user?.email || "User";
+    const t = await getTranslations("Navigation");
+    const email = user?.email || t("user");
     const name = user?.user_metadata?.full_name || email;
     const initial = name.charAt(0).toUpperCase();
 
@@ -21,7 +23,7 @@ export async function Navbar() {
                 </div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
                     <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                        <span className="sr-only">View notifications</span>
+                        <span className="sr-only">{t("viewNotifications")}</span>
                         <Bell className="h-5 w-5" aria-hidden="true" />
                     </Button>
 
@@ -37,7 +39,7 @@ export async function Navbar() {
                             </Avatar>
                         </Link>
                         <form action={logout}>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" type="submit" title="Logout">
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" type="submit" title={t("logout")}>
                                 <LogOut className="h-4 w-4" />
                             </Button>
                         </form>

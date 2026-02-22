@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { login, signup } from "@/actions/auth";
 import { Loader2, Fingerprint } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoginView, setIsLoginView] = useState(true);
+    const t = useTranslations("Auth");
 
     async function handleSubmit(formData: FormData) {
         setIsLoading(true);
@@ -35,33 +37,30 @@ export default function LoginPage() {
                             <Fingerprint className="h-6 w-6" />
                         </div>
                         <CardTitle className="text-2xl font-bold tracking-tight">
-                            {isLoginView ? "Welcome back" : "Create an account"}
+                            {isLoginView ? t("welcomeBack") : t("createAccount")}
                         </CardTitle>
                         <CardDescription>
-                            {isLoginView
-                                ? "Enter your email and password to sign in to your account"
-                                : "Enter your email and password to create your account"
-                            }
+                            {isLoginView ? t("signInDesc") : t("signUpDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form action={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t("email")}</Label>
                                 <Input
                                     id="email"
                                     name="email"
                                     type="email"
-                                    placeholder="m@example.com"
+                                    placeholder={t("emailPlaceholder")}
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password">{t("password")}</Label>
                                     {isLoginView && (
                                         <Button variant="link" className="px-0 font-normal h-auto text-xs" type="button">
-                                            Forgot password?
+                                            {t("forgotPassword")}
                                         </Button>
                                     )}
                                 </div>
@@ -74,13 +73,13 @@ export default function LoginPage() {
                             </div>
                             <Button className="w-full" type="submit" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isLoginView ? "Sign In" : "Sign Up"}
+                                {isLoginView ? t("signIn") : t("signUp")}
                             </Button>
                         </form>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
                         <div className="text-sm text-muted-foreground text-center w-full">
-                            {isLoginView ? "Don't have an account?" : "Already have an account?"}
+                            {isLoginView ? t("noAccount") : t("hasAccount")}
                         </div>
                         <Button
                             variant="outline"
@@ -89,7 +88,7 @@ export default function LoginPage() {
                             disabled={isLoading}
                             type="button"
                         >
-                            {isLoginView ? "Create an account" : "Sign in instead"}
+                            {isLoginView ? t("createAccount") : t("signInInstead")}
                         </Button>
                     </CardFooter>
                 </Card>

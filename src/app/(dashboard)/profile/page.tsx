@@ -20,9 +20,11 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { useTranslations } from "next-intl";
 
 export default function ProfilePage() {
     const supabase = createClient();
+    const t = useTranslations("Profile");
     const router = useRouter();
     const { resolvedTheme } = useTheme();
     const sigPad = useRef<SignatureCanvas>(null);
@@ -68,7 +70,7 @@ export default function ProfilePage() {
 
     const handleSaveSignature = async () => {
         if (sigPad.current?.isEmpty()) {
-            toast.error("Please provide a signature first");
+            toast.error(t("provideSignatureWarning"));
             return;
         }
         setIsSavingSignature(true);
@@ -77,13 +79,13 @@ export default function ProfilePage() {
             if (dataURL) {
                 const result = await saveUserSignature(dataURL);
                 if (result.error) throw new Error(result.error);
-                toast.success("Signature saved securely!");
+                toast.success(t("signatureSaved"));
                 const refreshResult = await getUserSignature();
                 if (refreshResult?.data) setSavedSignatureUrl(refreshResult.data);
                 setSignatureModalOpen(false);
             }
         } catch {
-            toast.error("Failed to save signature");
+            toast.error(t("failedToSaveSignature"));
         } finally {
             setIsSavingSignature(false);
         }
@@ -95,9 +97,9 @@ export default function ProfilePage() {
             const result = await deleteUserSignature();
             if (result.error) throw new Error(result.error);
             setSavedSignatureUrl(null);
-            toast.success("Signature deleted");
+            toast.success(t("signatureDeleted"));
         } catch {
-            toast.error("Failed to delete signature");
+            toast.error(t("failedToDeleteSignature"));
         } finally {
             setIsDeletingSignature(false);
         }
@@ -119,10 +121,10 @@ export default function ProfilePage() {
 
             if (error) throw error;
 
-            toast.success("Profile updated successfully");
+            toast.success(t("profileUpdated"));
             router.refresh(); // Refresh layout to update navbar avatar
         } catch (error: any) {
-            toast.error(error.message || "Failed to update profile");
+            toast.error(error.message || t("failedToUpdateProfile"));
         } finally {
             setIsSaving(false);
         }
@@ -132,8 +134,8 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-                    <p className="text-muted-foreground mt-1">Manage your personal DocSign account details.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t("myProfile")}</h1>
+                    <p className="text-muted-foreground mt-1">{t("myProfileDesc")}</p>
                 </div>
             </div>
 
@@ -143,10 +145,10 @@ export default function ProfilePage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <User className="h-5 w-5 text-muted-foreground" />
-                            Personal Information
+                            {t("personalInfo")}
                         </CardTitle>
                         <CardDescription>
-                            Update your display name to look more professional on document requests.
+                            {t("personalInfoDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -157,7 +159,7 @@ export default function ProfilePage() {
                         ) : (
                             <form onSubmit={handleSave} className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
+                                    <Label htmlFor="email">{t("emailAddress")}</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -165,19 +167,19 @@ export default function ProfilePage() {
                                         disabled
                                         className="bg-muted text-muted-foreground"
                                     />
-                                    <p className="text-xs text-muted-foreground">Your email is managed by your authentication provider.</p>
+                                    <p className="text-xs text-muted-foreground">{t("emailManagedProvider")}</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="fullName">Full Name</Label>
+                                    <Label htmlFor="fullName">{t("fullName")}</Label>
                                     <Input
                                         id="fullName"
                                         type="text"
-                                        placeholder="e.g. Alin Moraru"
+                                        placeholder={t("fullNamePlaceholder")}
                                         value={profile.fullName}
                                         onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
                                     />
-                                    <p className="text-xs text-muted-foreground">This name will be displayed when you request signatures from clients.</p>
+                                    <p className="text-xs text-muted-foreground">{t("fullNameDesc")}</p>
                                 </div>
 
                                 <div className="flex items-center space-x-2 pt-2">
@@ -188,27 +190,27 @@ export default function ProfilePage() {
                                         checked={profile.isBusiness}
                                         onChange={(e) => setProfile({ ...profile, isBusiness: e.target.checked })}
                                     />
-                                    <Label htmlFor="isBusiness" className="cursor-pointer">This is a business account</Label>
+                                    <Label htmlFor="isBusiness" className="cursor-pointer">{t("isBusinessAccount")}</Label>
                                 </div>
 
                                 {profile.isBusiness && (
                                     <div className="space-y-4 p-4 border rounded-md bg-muted/50">
                                         <div className="space-y-2">
-                                            <Label htmlFor="companyName">Business Name</Label>
+                                            <Label htmlFor="companyName">{t("businessName")}</Label>
                                             <Input
                                                 id="companyName"
                                                 type="text"
-                                                placeholder="e.g. Acme Corp"
+                                                placeholder={t("businessNamePlaceholder")}
                                                 value={profile.companyName}
                                                 onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="companyInfo">Additional Business Information</Label>
+                                            <Label htmlFor="companyInfo">{t("additionalBusinessInfo")}</Label>
                                             <textarea
                                                 id="companyInfo"
                                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                placeholder="Address, Registration Number, VAT ID..."
+                                                placeholder={t("additionalBusinessInfoPlaceholder")}
                                                 value={profile.companyInfo}
                                                 onChange={(e) => setProfile({ ...profile, companyInfo: e.target.value })}
                                             />
@@ -218,7 +220,7 @@ export default function ProfilePage() {
 
                                 <Button type="submit" disabled={isSaving || !profile.fullName.trim()}>
                                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Save Changes
+                                    {t("saveChanges")}
                                 </Button>
                             </form>
                         )}
@@ -232,10 +234,10 @@ export default function ProfilePage() {
                             <div>
                                 <CardTitle className="flex items-center gap-2 text-lg">
                                     <PenTool className="h-5 w-5 text-muted-foreground" />
-                                    My signature
+                                    {t("mySignature")}
                                 </CardTitle>
                                 <CardDescription className="mt-1">
-                                    Save a signature once and use it for 1-click signing on documents.
+                                    {t("mySignatureDesc")}
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-auto">
@@ -245,7 +247,7 @@ export default function ProfilePage() {
                                     size="sm"
                                     onClick={() => setSignatureModalOpen(true)}
                                 >
-                                    {savedSignatureUrl ? "Change signature" : "Add signature"}
+                                    {savedSignatureUrl ? t("changeSignature") : t("addSignature")}
                                 </Button>
                                 {savedSignatureUrl && (
                                     <Button
@@ -257,7 +259,7 @@ export default function ProfilePage() {
                                         disabled={isDeletingSignature}
                                     >
                                         {isDeletingSignature ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                        Delete
+                                        {t("delete")}
                                     </Button>
                                 )}
                             </div>
@@ -272,7 +274,7 @@ export default function ProfilePage() {
                                     className="max-h-24 w-full object-contain dark:invert"
                                 />
                             ) : (
-                                <p className="text-sm text-muted-foreground text-center">No signature yet</p>
+                                <p className="text-sm text-muted-foreground text-center">{t("noSignatureYet")}</p>
                             )}
                         </div>
                     </CardContent>
@@ -282,9 +284,9 @@ export default function ProfilePage() {
                 <Dialog open={signatureModalOpen} onOpenChange={setSignatureModalOpen}>
                     <DialogContent className="sm:max-w-2xl border-border">
                         <DialogHeader>
-                            <DialogTitle>Draw your signature</DialogTitle>
+                            <DialogTitle>{t("drawYourSignature")}</DialogTitle>
                             <DialogDescription>
-                                Draw below. We will store it securely so you can use 1-click signing on documents.
+                                {t("drawBelow")}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 overflow-hidden">
@@ -301,11 +303,11 @@ export default function ProfilePage() {
                                 onClick={() => sigPad.current?.clear()}
                                 disabled={isSavingSignature}
                             >
-                                Clear
+                                {t("clear")}
                             </Button>
                             <Button type="button" onClick={handleSaveSignature} disabled={isSavingSignature}>
                                 {isSavingSignature ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PenTool className="h-4 w-4 mr-2" />}
-                                Save signature
+                                {t("saveSignatureBtn")}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -316,10 +318,10 @@ export default function ProfilePage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
-                            Account
+                            {t("account")}
                         </CardTitle>
                         <CardDescription>
-                            Your authentication method and account security.
+                            {t("accountDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -329,11 +331,11 @@ export default function ProfilePage() {
                                     <CheckCircle2 className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium">Google Authentication</p>
-                                    <p className="text-xs text-muted-foreground">You are securely connected with Google.</p>
+                                    <p className="text-sm font-medium">{t("googleAuth")}</p>
+                                    <p className="text-xs text-muted-foreground">{t("googleAuthDesc")}</p>
                                 </div>
                             </div>
-                            <Button variant="outline" size="sm" disabled>Manage</Button>
+                            <Button variant="outline" size="sm" disabled>{t("manage")}</Button>
                         </div>
                     </CardContent>
                 </Card>

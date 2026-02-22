@@ -18,14 +18,16 @@ interface DocumentRow {
     created_at: string;
 }
 
-function DocumentTable({ docs, emptyMessage }: { docs: DocumentRow[]; emptyMessage: string }) {
+import { getTranslations } from "next-intl/server";
+
+function DocumentTable({ docs, emptyMessage, t }: { docs: DocumentRow[]; emptyMessage: string; t: any }) {
     if (docs.length === 0) {
         return (
             <EmptyState
-                title="No documents found"
+                title={t("noDocumentsFound")}
                 description={emptyMessage}
                 icon={FileText}
-                actionLabel="New Document"
+                actionLabel={t("newDocument")}
                 actionHref="/new"
             />
         );
@@ -35,11 +37,11 @@ function DocumentTable({ docs, emptyMessage }: { docs: DocumentRow[]; emptyMessa
             <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b">
                     <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Document Name</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Signer(s)</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date Sent</th>
-                        <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("documentName")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("signers")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("status")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("dateSent")}</th>
+                        <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">{t("actions")}</th>
                     </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
@@ -77,7 +79,7 @@ function DocumentTable({ docs, emptyMessage }: { docs: DocumentRow[]; emptyMessa
                             <td className="p-4 align-middle text-right">
                                 <div className="flex justify-end items-center gap-2">
                                     <Link href={`/document/${doc.id}`}>
-                                        <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-primary hover:bg-primary/15 hover:text-primary hover:border-primary/50" title="View document">
+                                        <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-primary hover:bg-primary/15 hover:text-primary hover:border-primary/50" title={t("viewDocument")}>
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                     </Link>
@@ -93,6 +95,7 @@ function DocumentTable({ docs, emptyMessage }: { docs: DocumentRow[]; emptyMessa
 }
 
 export default async function DocumentsPage() {
+    const t = await getTranslations("Documents");
     const { data: documents, error } = await getRecentDocuments();
 
     const pendingDocs = (documents?.filter(d => d.status === "Pending") || []) as DocumentRow[];
@@ -102,40 +105,40 @@ export default async function DocumentsPage() {
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track your signature requests.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+                    <p className="text-muted-foreground mt-1">{t("description")}</p>
                 </div>
                 <Button asChild size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                     <Link href="/new" className="gap-2">
                         <Plus className="h-4 w-4" />
-                        New Document
+                        {t("newDocument")}
                     </Link>
                 </Button>
             </div>
 
             {error ? (
                 <Card className="p-8 text-center text-destructive bg-destructive/10">
-                    <p>Failed to load documents: {error}</p>
+                    <p>{t("failedToLoad")}{error}</p>
                 </Card>
             ) : (
                 <Tabs defaultValue="pending" className="w-full">
                     <TabsList className="mb-4">
                         <TabsTrigger value="pending">
-                            Pending ({pendingDocs.length})
+                            {t("pendingTab", { count: pendingDocs.length })}
                         </TabsTrigger>
                         <TabsTrigger value="completed">
-                            Completed ({completedDocs.length})
+                            {t("completedTab", { count: completedDocs.length })}
                         </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="pending">
                         <Card className="shadow-sm">
                             <CardHeader>
-                                <CardTitle>Unsigned Documents</CardTitle>
-                                <CardDescription>Documents waiting for the recipient to sign.</CardDescription>
+                                <CardTitle>{t("unsignedDocumentsTitle")}</CardTitle>
+                                <CardDescription>{t("unsignedDocumentsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DocumentTable docs={pendingDocs} emptyMessage="No pending documents found." />
+                                <DocumentTable docs={pendingDocs} emptyMessage={t("noPendingDocs")} t={t} />
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -143,11 +146,11 @@ export default async function DocumentsPage() {
                     <TabsContent value="completed">
                         <Card className="shadow-sm">
                             <CardHeader>
-                                <CardTitle>Signed Documents</CardTitle>
-                                <CardDescription>Documents that have been fully signed and finalized.</CardDescription>
+                                <CardTitle>{t("signedDocumentsTitle")}</CardTitle>
+                                <CardDescription>{t("signedDocumentsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DocumentTable docs={completedDocs} emptyMessage="No completed documents found." />
+                                <DocumentTable docs={completedDocs} emptyMessage={t("noCompletedDocs")} t={t} />
                             </CardContent>
                         </Card>
                     </TabsContent>

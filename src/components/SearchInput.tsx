@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { searchDocuments } from "@/actions/documents";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 export function SearchInput() {
     const [query, setQuery] = useState("");
@@ -13,6 +14,7 @@ export function SearchInput() {
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const t = useTranslations("Components");
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -54,7 +56,7 @@ export function SearchInput() {
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => { if (query.trim().length > 1) setIsOpen(true); }}
                 className="pl-9 pr-8 py-2 w-full bg-muted/50 border-border focus-visible:ring-ring transition-all rounded-full h-full text-sm placeholder:text-muted-foreground focus:bg-background focus:shadow-sm"
-                placeholder="Search documents or signers..."
+                placeholder={t("searchPlaceholder")}
                 type="text"
             />
             {query && (
@@ -71,7 +73,7 @@ export function SearchInput() {
                 <div className="absolute top-12 left-0 w-full bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     {isLoading ? (
                         <div className="p-4 flex items-center justify-center text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching...
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t("searching")}
                         </div>
                     ) : results.length > 0 ? (
                         <div className="max-h-80 overflow-y-auto p-2">
@@ -101,7 +103,7 @@ export function SearchInput() {
                         </div>
                     ) : (
                         <div className="p-6 text-center text-sm text-muted-foreground">
-                            No documents found matching &quot;{query}&quot;
+                            {t("noDocumentsFound", { query })}
                         </div>
                     )}
                 </div>

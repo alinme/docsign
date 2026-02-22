@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { useTranslations } from "next-intl";
 
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
 const Document = dynamic(() => import("react-pdf").then((mod) => mod.Document), { ssr: false });
@@ -26,6 +27,7 @@ function SignDocumentContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const currentSignerId = searchParams.get('signer');
+    const t = useTranslations("Sign");
 
     useEffect(() => {
         import("react-pdf")
@@ -35,7 +37,7 @@ function SignDocumentContent() {
                     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
     const sigPad = useRef<SignatureCanvas>(null);
     const supabase = createClient();
@@ -79,7 +81,7 @@ function SignDocumentContent() {
             const result = await getDocumentById(params.id as string);
 
             if (result.error) {
-                toast.error("Failed to load document");
+                toast.error(t("failedToLoad"));
                 router.push("/");
             } else {
                 setDocument(result.data);
@@ -120,7 +122,7 @@ function SignDocumentContent() {
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Document signed successfully!");
+                toast.success(t("signedSuccessfully"));
                 router.refresh();
                 const refreshedDoc = await getDocumentById(document.id);
                 if (refreshedDoc.data) {
@@ -132,7 +134,7 @@ function SignDocumentContent() {
                 setIsSigned(true);
             }
         } catch (error) {
-            toast.error("An error occurred during signing.");
+            toast.error(t("signingError"));
         } finally {
             setIsSubmitting(false);
         }
@@ -169,21 +171,21 @@ function SignDocumentContent() {
             <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-card px-6 shadow-sm">
                 <div className="flex items-center gap-4 text-sm font-medium text-foreground">
                     <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground font-bold">D</div>
-                    <span>DocSign</span>
+                    <span>{t("docSign")}</span>
                     <span className="text-muted-foreground">|</span>
                     <span className="text-muted-foreground truncate max-w-[200px] md:max-w-md">{document.file_name}</span>
                 </div>
                 <div className="flex items-center gap-3">
                     {!agreed ? (
                         <Button variant="outline" size="sm" onClick={() => setAgreed(true)}>
-                            Review & Agree
+                            {t("reviewAndAgree")}
                         </Button>
                     ) : (
                         <>
-                        {canSubmit ? (
-                            <Button variant="outline" size="sm" onClick={handleSignLater}>
-                                Sign later
-                            </Button>
+                            {canSubmit ? (
+                                <Button variant="outline" size="sm" onClick={handleSignLater}>
+                                    {t("signLater")}
+                                </Button>
                             ) : (<></>)}
                             <Button
                                 size="sm"
@@ -192,7 +194,7 @@ function SignDocumentContent() {
                                 onClick={handleSign}
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                {isSigned ? "Completed" : "Finish Signing"}
+                                {isSigned ? t("completed") : t("finishSigning")}
                             </Button>
                         </>
                     )}
@@ -206,9 +208,9 @@ function SignDocumentContent() {
                         <Card className="flex flex-col items-center justify-center gap-4 p-8 border-primary/30 bg-primary/10 text-center">
                             <ShieldAlert className="h-12 w-12 text-primary shrink-0" />
                             <div>
-                                <h3 className="text-xl font-semibold text-foreground">{document.initiator_name || document.initiator_email} has requested your signature.</h3>
+                                <h3 className="text-xl font-semibold text-foreground">{t("requestedSignature", { name: document.initiator_name || document.initiator_email })}</h3>
                                 <p className="mt-2 text-sm text-muted-foreground max-w-lg mx-auto">
-                                    Please review the document below. By clicking &quot;Review &amp; Agree&quot;, you consent to doing business electronically with DocSign.
+                                    {t("consentText")}
                                 </p>
                             </div>
                         </Card>
@@ -217,7 +219,7 @@ function SignDocumentContent() {
                     {agreed && !isSigned && (
                         <Card className="p-4 border-2 border-amber-500/60 bg-amber-500/20 dark:bg-amber-500/30 text-center">
                             <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                                Click each yellow &quot;Sign Here&quot; or &quot;Click to Sign&quot; box on the document below to add your signature, then click Finish Signing.
+                                {t("instructionsText")}
                             </p>
                         </Card>
                     )}
@@ -228,20 +230,19 @@ function SignDocumentContent() {
                         <Card className="flex flex-col items-center justify-center gap-4 p-8 border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-center">
                             <CheckCircle2 className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
                             <div>
-                                <h3 className="text-xl font-bold">Document Successfully Signed</h3>
-                                <p className="text-sm mt-2 text-emerald-700 dark:text-emerald-300">You and the Initiator will receive an email with the finalized PDF and audit trail.</p>
+                                <h3 className="text-xl font-bold">{t("successTitle")}</h3>
+                                <p className="text-sm mt-2 text-emerald-700 dark:text-emerald-300">{t("successMessage")}</p>
                             </div>
 
                             {isAuthenticated ? (
                                 <Button onClick={() => router.push("/")} className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
-                                    Return to Dashboard
+                                    {t("returnToDashboard")}
                                 </Button>
                             ) : (
                                 <Button onClick={() => router.push("/auth/login")} className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
-                                    Create your own DocSign Account
+                                    {t("createAccount")}
                                 </Button>
                             )}
-
                         </Card>
                     )}
 
@@ -259,83 +260,83 @@ function SignDocumentContent() {
                                         const pageWidth = pdfWidth > 800 ? 800 : Math.max(pdfWidth - 64, 300);
                                         const pageHeight = pageWidth * (11 / 8.5);
                                         return (
-                                        <div key={`page_${index + 1}`} className="mb-4 relative" style={{ width: pageWidth, height: pageHeight }}>
-                                            <Page
-                                                pageNumber={index + 1}
-                                                width={pageWidth}
-                                                renderTextLayer={false}
-                                                renderAnnotationLayer={false}
-                                            />
+                                            <div key={`page_${index + 1}`} className="mb-4 relative" style={{ width: pageWidth, height: pageHeight }}>
+                                                <Page
+                                                    pageNumber={index + 1}
+                                                    width={pageWidth}
+                                                    renderTextLayer={false}
+                                                    renderAnnotationLayer={false}
+                                                />
 
-                                            {/* Render Advanced Fields Overlays only when not yet signed (placeholders hidden after signing) */}
-                                            {!isSigned && Array.isArray(document.sign_coordinates) && document.sign_coordinates.map((block: any, i: number) => {
-                                                const targetPageNum = block.pageNum || numPages;
-                                                if (targetPageNum !== index + 1) return null;
+                                                {/* Render Advanced Fields Overlays only when not yet signed (placeholders hidden after signing) */}
+                                                {!isSigned && Array.isArray(document.sign_coordinates) && document.sign_coordinates.map((block: any, i: number) => {
+                                                    const targetPageNum = block.pageNum || numPages;
+                                                    if (targetPageNum !== index + 1) return null;
 
-                                                const isMyBlock = block.signerId === effectiveSignerId || !block.signerId;
-                                                if (!isMyBlock) return null;
+                                                    const isMyBlock = block.signerId === effectiveSignerId || !block.signerId;
+                                                    if (!isMyBlock) return null;
 
-                                                const fieldType = block.type || 'signature';
-                                                const blockKey = block.id ?? `block-${index}-${i}`;
+                                                    const fieldType = block.type || 'signature';
+                                                    const blockKey = block.id ?? `block-${index}-${i}`;
 
-                                                return (
-                                                    <div
-                                                        key={blockKey}
-                                                        className={`absolute z-30 flex items-center justify-center border-2 rounded min-w-[120px]
+                                                    return (
+                                                        <div
+                                                            key={blockKey}
+                                                            className={`absolute z-30 flex items-center justify-center border-2 rounded min-w-[120px]
                                                             ${fieldType === 'signature' ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/95 w-48 h-16 cursor-pointer hover:border-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/95 shadow-lg ring-2 ring-amber-400/50' : ''}
                                                             ${fieldType === 'date' ? 'border-border bg-muted/90 dark:bg-muted w-48 h-12' : ''}
                                                             ${fieldType === 'text' ? 'border-purple-500 bg-purple-100 dark:bg-purple-900/90 w-48 h-12' : ''}
                                                             ${fieldType === 'checkbox' ? 'border-green-500 bg-green-100 dark:bg-green-900/90 w-8 h-8' : ''}
                                                         `}
-                                                        style={{
-                                                            left: block.xPct !== undefined ? `${block.xPct * 100}%` : `${block.x}px`,
-                                                            top: block.yPct !== undefined ? `${block.yPct * 100}%` : `${block.y}px`
-                                                        }}
-                                                        onClick={fieldType === 'signature' && !isSigned && agreed ? () => setSignatureData("pending_interaction") : undefined}
-                                                    >
-                                                        {fieldType === 'signature' && (
-                                                            !signatureData ? (
-                                                                <div className="flex flex-col items-center justify-center gap-1 text-amber-900 dark:text-amber-100 pointer-events-none font-medium">
-                                                                    <PenTool className="h-5 w-5" />
-                                                                    <span className="text-xs font-semibold">Click to Sign</span>
-                                                                </div>
-                                                            ) : signatureData === "pending_interaction" ? (
-                                                                <span className="text-amber-900 dark:text-amber-100 font-medium text-xs">Waiting...</span>
-                                                            ) : (
-                                                                <img src={signatureData} alt="Signature" className="max-h-12 w-full object-contain pointer-events-none" />
-                                                            )
-                                                        )}
+                                                            style={{
+                                                                left: block.xPct !== undefined ? `${block.xPct * 100}%` : `${block.x}px`,
+                                                                top: block.yPct !== undefined ? `${block.yPct * 100}%` : `${block.y}px`
+                                                            }}
+                                                            onClick={fieldType === 'signature' && !isSigned && agreed ? () => setSignatureData("pending_interaction") : undefined}
+                                                        >
+                                                            {fieldType === 'signature' && (
+                                                                !signatureData ? (
+                                                                    <div className="flex flex-col items-center justify-center gap-1 text-amber-900 dark:text-amber-100 pointer-events-none font-medium">
+                                                                        <PenTool className="h-5 w-5" />
+                                                                        <span className="text-xs font-semibold">{t("clickToSign")}</span>
+                                                                    </div>
+                                                                ) : signatureData === "pending_interaction" ? (
+                                                                    <span className="text-amber-900 dark:text-amber-100 font-medium text-xs">{t("waiting")}</span>
+                                                                ) : (
+                                                                    <img src={signatureData} alt="Signature" className="max-h-12 w-full object-contain pointer-events-none" />
+                                                                )
+                                                            )}
 
-                                                        {fieldType === 'date' && (
-                                                            <span className="text-foreground font-medium text-sm">
-                                                                {(fieldsState[block.id] as string) || new Date().toLocaleDateString()}
-                                                            </span>
-                                                        )}
+                                                            {fieldType === 'date' && (
+                                                                <span className="text-foreground font-medium text-sm">
+                                                                    {(fieldsState[block.id] as string) || new Date().toLocaleDateString()}
+                                                                </span>
+                                                            )}
 
-                                                        {fieldType === 'text' && (
-                                                            <input
-                                                                type="text"
-                                                                className="w-full h-full bg-transparent border-none focus:ring-0 text-center text-sm px-2 text-foreground placeholder:text-muted-foreground"
-                                                                placeholder="Type here..."
-                                                                disabled={isSigned || !agreed}
-                                                                value={fieldsState[block.id] as string || ''}
-                                                                onChange={(e) => setFieldsState(prev => ({ ...prev, [block.id]: e.target.value }))}
-                                                            />
-                                                        )}
+                                                            {fieldType === 'text' && (
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full h-full bg-transparent border-none focus:ring-0 text-center text-sm px-2 text-foreground placeholder:text-muted-foreground"
+                                                                    placeholder={t("typeHere")}
+                                                                    disabled={isSigned || !agreed}
+                                                                    value={fieldsState[block.id] as string || ''}
+                                                                    onChange={(e) => setFieldsState(prev => ({ ...prev, [block.id]: e.target.value }))}
+                                                                />
+                                                            )}
 
-                                                        {fieldType === 'checkbox' && (
-                                                            <input
-                                                                type="checkbox"
-                                                                className="w-5 h-5 text-primary rounded cursor-pointer accent-primary"
-                                                                disabled={isSigned || !agreed}
-                                                                checked={!!fieldsState[block.id]}
-                                                                onChange={(e) => setFieldsState(prev => ({ ...prev, [block.id]: e.target.checked }))}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                                            {fieldType === 'checkbox' && (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-5 h-5 text-primary rounded cursor-pointer accent-primary"
+                                                                    disabled={isSigned || !agreed}
+                                                                    checked={!!fieldsState[block.id]}
+                                                                    onChange={(e) => setFieldsState(prev => ({ ...prev, [block.id]: e.target.checked }))}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         );
                                     })}
                                 </Document>
@@ -349,63 +350,63 @@ function SignDocumentContent() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <Card className="w-full max-w-lg shadow-2xl overflow-hidden rounded-2xl border-border bg-card">
                         <div className="border-b border-border bg-muted/50 p-4 flex justify-between items-center">
-                            <h2 className="text-lg font-bold text-foreground">Adopt Your Signature</h2>
-                            <Button variant="outline" size="sm" className="border-2 border-border bg-background text-foreground" onClick={() => setSignatureData(null)}>Cancel</Button>
+                            <h2 className="text-lg font-bold text-foreground">{t("adoptSignatureTitle")}</h2>
+                            <Button variant="outline" size="sm" className="border-2 border-border bg-background text-foreground" onClick={() => setSignatureData(null)}>{t("cancel")}</Button>
                         </div>
                         <Separator />
                         <div className="p-6">
                             <Tabs defaultValue={savedSignatureUrl ? "saved" : "draw"}>
                                 <TabsList className={`mb-4 grid w-full border border-border bg-muted/50 ${savedSignatureUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
                                     {savedSignatureUrl && (
-                                        <TabsTrigger value="saved" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Saved</TabsTrigger>
+                                        <TabsTrigger value="saved" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">{t("saved")}</TabsTrigger>
                                     )}
-                                    <TabsTrigger value="draw" className="bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Draw (Desktop)</TabsTrigger>
-                                    <TabsTrigger value="mobile" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">Mobile Handoff</TabsTrigger>
+                                    <TabsTrigger value="draw" className="bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">{t("drawDesktop")}</TabsTrigger>
+                                    <TabsTrigger value="mobile" className="gap-2 bg-background text-foreground data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border">{t("mobileHandoff")}</TabsTrigger>
                                 </TabsList>
 
                                 {savedSignatureUrl && (
                                     <TabsContent value="saved" className="space-y-4">
                                         <div className="rounded-xl border-2 border-border bg-muted/50 p-6 flex flex-col items-center justify-center">
-                                            <p className="text-sm font-medium text-foreground mb-4">Your saved signature:</p>
+                                            <p className="text-sm font-medium text-foreground mb-4">{t("savedSignature")}</p>
                                             <img src={savedSignatureUrl} alt="Saved Signature" className="max-h-24 object-contain bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-sm border-2 border-border" />
                                         </div>
                                         <Separator />
                                         <div className="flex justify-end gap-3">
                                             <Button className="border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" onClick={() => setSignatureData(savedSignatureUrl)}>
-                                                Adopt and Sign
+                                                {t("adoptAndSign")}
                                             </Button>
                                         </div>
                                     </TabsContent>
                                 )}
 
                                 <TabsContent value="draw" className="space-y-4">
-                                    <p className="text-sm text-foreground font-medium">Draw your signature in the box below:</p>
+                                    <p className="text-sm text-foreground font-medium">{t("drawBelow")}</p>
                                     <div className="rounded-xl border-2 border-border bg-white dark:bg-zinc-900 relative overflow-hidden min-h-[192px]">
                                         <SignatureCanvas
-                                        ref={sigPad}
-                                        penColor={document?.signature_color ?? DEFAULT_SIGNATURE_COLOR}
-                                        canvasProps={{ className: "w-full h-48 bg-white dark:bg-zinc-900", style: { background: 'white' } }}
-                                    />
+                                            ref={sigPad}
+                                            penColor={document?.signature_color ?? DEFAULT_SIGNATURE_COLOR}
+                                            canvasProps={{ className: "w-full h-48 bg-white dark:bg-zinc-900", style: { background: 'white' } }}
+                                        />
                                     </div>
                                     <Separator />
                                     <div className="flex justify-end gap-3">
-                                        <Button variant="outline" className="border-2 border-border bg-background text-foreground" onClick={() => sigPad.current?.clear()}>Clear</Button>
+                                        <Button variant="outline" className="border-2 border-border bg-background text-foreground" onClick={() => sigPad.current?.clear()}>{t("clear")}</Button>
                                         <Button className="border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" onClick={() => {
-                                            if (sigPad.current?.isEmpty()) { toast.error("Please provide a signature first"); return; }
+                                            if (sigPad.current?.isEmpty()) { toast.error(t("provideSignatureAuth")); return; }
                                             const dataURL = sigPad.current?.getTrimmedCanvas().toDataURL("image/png");
                                             if (dataURL) setSignatureData(dataURL);
                                         }}>
-                                            Adopt and Sign
+                                            {t("adoptAndSign")}
                                         </Button>
                                     </div>
                                 </TabsContent>
 
                                 <TabsContent value="mobile" className="flex flex-col items-center py-8 text-center">
                                     <div className="mb-4 h-48 w-48 rounded-xl border-2 border-border bg-muted flex items-center justify-center">
-                                        <span className="text-muted-foreground text-sm font-mono">[ QR CODE SCAN ]</span>
+                                        <span className="text-muted-foreground text-sm font-mono">{t("qrCodeScan")}</span>
                                     </div>
-                                    <h3 className="font-semibold text-foreground">Scan to Sign on Mobile</h3>
-                                    <p className="mt-1 text-sm text-muted-foreground">Point your phone camera at this QR code. Your signature will sync instantly.</p>
+                                    <h3 className="font-semibold text-foreground">{t("scanToSignMobile")}</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">{t("scanInstructions")}</p>
                                 </TabsContent>
                             </Tabs>
                         </div>

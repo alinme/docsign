@@ -40,6 +40,7 @@ import {
 import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { useTranslations } from "next-intl";
 
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
 const Document = dynamic(() => import("react-pdf").then((mod) => mod.Document), { ssr: false });
@@ -49,6 +50,7 @@ function NewDocumentContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const templateId = searchParams.get("template");
+    const t = useTranslations("NewDocument");
 
     useEffect(() => {
         import("react-pdf")
@@ -58,7 +60,7 @@ function NewDocumentContent() {
                     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const [file, setFile] = useState<File | null>(null);
@@ -296,11 +298,11 @@ function NewDocumentContent() {
             } else {
                 lastSavedSnapshotRef.current = JSON.stringify({ blocks: signatureBlocks, signers: signersPayload });
                 setTemplateSaveState("saved");
-                toast.success("Template updated");
+                toast.success(t("templateUpdated"));
                 setTimeout(() => setTemplateSaveState("idle"), 2000);
             }
         } catch {
-            toast.error("Failed to update template");
+            toast.error(t("failedToUpdate"));
             setTemplateSaveState("idle");
         }
     };
@@ -316,10 +318,10 @@ function NewDocumentContent() {
                 setCurrentTemplateName(name);
                 setRenameTemplateOpen(false);
                 setRenameTemplateName("");
-                toast.success("Template renamed");
+                toast.success(t("templateRenamed"));
             }
         } catch {
-            toast.error("Failed to rename template");
+            toast.error(t("failedToRename"));
         }
     };
 
@@ -358,7 +360,7 @@ function NewDocumentContent() {
                 setTemplateSaveState("idle");
             } else {
                 setTemplateSaveState("saved");
-                toast.success("Template saved");
+                toast.success(t("templateSaved"));
                 const newTemplateId = result.templateId;
                 if (newTemplateId) {
                     router.replace(`/new?template=${newTemplateId}`);
@@ -367,7 +369,7 @@ function NewDocumentContent() {
                 }
             }
         } catch {
-            toast.error("Failed to save template");
+            toast.error(t("failedToSave"));
             setTemplateSaveState("idle");
         }
     };
@@ -455,11 +457,11 @@ function NewDocumentContent() {
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Document sent successfully!");
+                toast.success(t("successSent"));
                 router.push("/");
             }
         } catch (error) {
-            toast.error("Failed to send document");
+            toast.error(t("failedSent"));
         } finally {
             setIsLoading(false);
         }
@@ -468,8 +470,8 @@ function NewDocumentContent() {
     return (
         <div>
             <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight">Prepare Document</h1>
-                <p className="text-muted-foreground mt-1">Upload a PDF, add signer details, and place the signature block.</p>
+                <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+                <p className="text-muted-foreground mt-1">{t("description")}</p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -482,14 +484,14 @@ function NewDocumentContent() {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1.5 border-border bg-background text-foreground hover:bg-muted min-w-[140px] justify-between">
                                         <User className="h-4 w-4 shrink-0" />
-                                        {signers.find(s => s.id === selectedSignerIdForBlocks)?.name || `Signer ${(signers.findIndex(s => s.id === selectedSignerIdForBlocks) + 1) || 1}`}
+                                        {signers.find(s => s.id === selectedSignerIdForBlocks)?.name || t("signerLabel", { count: (signers.findIndex(s => s.id === selectedSignerIdForBlocks) + 1) || 1 })}
                                         <ChevronDown className="h-4 w-4 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" className="min-w-[180px]">
                                     {signers.map((s, idx) => (
                                         <DropdownMenuItem key={s.id} onClick={() => setSelectedSignerIdForBlocks(s.id)}>
-                                            Signer {idx + 1} {s.name ? `— ${s.name}` : ""}
+                                            {s.name ? t("signerWithHyphen", { count: idx + 1, name: s.name }) : t("signerLabel", { count: idx + 1 })}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>
@@ -499,22 +501,22 @@ function NewDocumentContent() {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1.5 border-border bg-background text-foreground hover:bg-muted">
                                         <Plus className="h-4 w-4 shrink-0" />
-                                        Add field
+                                        {t("addField")}
                                         <ChevronDown className="h-4 w-4 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start" className="min-w-[160px]">
                                     <DropdownMenuItem onClick={() => addSignatureBlock('signature')} className="text-amber-700 dark:text-amber-200">
-                                        <PenTool className="h-4 w-4 mr-2" /> Signature
+                                        <PenTool className="h-4 w-4 mr-2" /> {t("signature")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => addSignatureBlock('date')}>
-                                        <Calendar className="h-4 w-4 mr-2" /> Date
+                                        <Calendar className="h-4 w-4 mr-2" /> {t("date")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => addSignatureBlock('text')} className="text-purple-700 dark:text-purple-200">
-                                        <Type className="h-4 w-4 mr-2" /> Text
+                                        <Type className="h-4 w-4 mr-2" /> {t("text")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => addSignatureBlock('checkbox')} className="text-emerald-700 dark:text-emerald-200">
-                                        <CheckSquare className="h-4 w-4 mr-2" /> Checkbox
+                                        <CheckSquare className="h-4 w-4 mr-2" /> {t("checkbox")}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -531,19 +533,19 @@ function NewDocumentContent() {
                                         {templateSaveState === "saving" && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
                                         {templateSaveState === "saved" && <Check className="h-4 w-4 text-emerald-600 shrink-0" />}
                                         {templateSaveState === "idle" && <Save className="h-4 w-4 shrink-0" />}
-                                        {templateSaveState === "saving" && <span className="animate-pulse">Saving…</span>}
-                                        {templateSaveState === "saved" && <span>Saved</span>}
-                                        {templateSaveState === "idle" && <span>Update template</span>}
+                                        {templateSaveState === "saving" && <span className="animate-pulse">{t("saving")}</span>}
+                                        {templateSaveState === "saved" && <span>{t("saved")}</span>}
+                                        {templateSaveState === "idle" && <span>{t("updateTemplate")}</span>}
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         className="gap-1.5 border-border bg-background text-foreground hover:bg-muted shrink-0"
                                         onClick={() => { setRenameTemplateName(currentTemplateName); setRenameTemplateOpen(true); }}
-                                        title="Rename template"
+                                        title={t("renameTemplateTitle")}
                                     >
                                         <Pencil className="h-4 w-4 shrink-0" />
-                                        Rename
+                                        {t("rename")}
                                     </Button>
                                 </>
                             ) : file ? (
@@ -554,7 +556,7 @@ function NewDocumentContent() {
                                     onClick={() => setSaveAsTemplateOpen(true)}
                                 >
                                     <Save className="h-4 w-4 shrink-0" />
-                                    Save as template
+                                    {t("saveAsTemplate")}
                                 </Button>
                             ) : null}
                             <Separator orientation="vertical" className="h-6 mx-1" />
@@ -563,7 +565,7 @@ function NewDocumentContent() {
                                 size="icon"
                                 className="h-8 w-8 shrink-0 border-border bg-background text-muted-foreground hover:text-destructive hover:border-destructive/50 ml-auto"
                                 onClick={() => templateId ? router.push("/templates") : setFile(null)}
-                                title={templateId ? "Exit template" : "Remove PDF"}
+                                title={templateId ? t("exitTemplate") : t("removePdf")}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -573,14 +575,14 @@ function NewDocumentContent() {
                     <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
                         <DialogContent className="sm:max-w-md border-border">
                             <DialogHeader>
-                                <DialogTitle>Save as template</DialogTitle>
+                                <DialogTitle>{t("saveAsTemplate")}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <label htmlFor="template-name-dialog" className="text-sm font-medium">Template name</label>
+                                    <label htmlFor="template-name-dialog" className="text-sm font-medium">{t("templateName")}</label>
                                     <Input
                                         id="template-name-dialog"
-                                        placeholder="e.g. NDA 2026"
+                                        placeholder={t("templateNamePlaceholder")}
                                         value={saveAsTemplateName}
                                         onChange={(e) => setSaveAsTemplateName(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSaveAsTemplate()}
@@ -588,13 +590,13 @@ function NewDocumentContent() {
                                 </div>
                             </div>
                             <DialogFooter className="gap-2 sm:gap-0">
-                                <Button variant="outline" onClick={() => setSaveAsTemplateOpen(false)}>Cancel</Button>
+                                <Button variant="outline" onClick={() => setSaveAsTemplateOpen(false)}>{t("cancel")}</Button>
                                 <Button
                                     onClick={handleSaveAsTemplate}
                                     disabled={!saveAsTemplateName.trim()}
                                     className="gap-2"
                                 >
-                                    Save template
+                                    {t("saveTemplateBtn")}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -603,14 +605,14 @@ function NewDocumentContent() {
                     <Dialog open={renameTemplateOpen} onOpenChange={(open) => { setRenameTemplateOpen(open); if (!open) setRenameTemplateName(""); }}>
                         <DialogContent className="sm:max-w-md border-border">
                             <DialogHeader>
-                                <DialogTitle>Rename template</DialogTitle>
+                                <DialogTitle>{t("renameTemplateTitle")}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <label htmlFor="rename-template-input" className="text-sm font-medium">Template name</label>
+                                    <label htmlFor="rename-template-input" className="text-sm font-medium">{t("templateName")}</label>
                                     <Input
                                         id="rename-template-input"
-                                        placeholder="e.g. NDA 2026"
+                                        placeholder={t("templateNamePlaceholder")}
                                         value={renameTemplateName}
                                         onChange={(e) => setRenameTemplateName(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleRenameTemplate()}
@@ -620,9 +622,9 @@ function NewDocumentContent() {
                                 </div>
                             </div>
                             <DialogFooter className="gap-2 sm:gap-0">
-                                <Button variant="outline" onClick={() => setRenameTemplateOpen(false)}>Cancel</Button>
+                                <Button variant="outline" onClick={() => setRenameTemplateOpen(false)}>{t("cancel")}</Button>
                                 <Button onClick={handleRenameTemplate} disabled={!renameTemplateName.trim()} className="gap-2">
-                                    Save
+                                    {t("rename")}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -637,13 +639,13 @@ function NewDocumentContent() {
                                 <div className="rounded-full bg-primary/10 p-4">
                                     <UploadCloud className="h-8 w-8 text-primary" />
                                 </div>
-                                <h3 className="mt-4 text-sm font-semibold">Drag & Drop PDF here</h3>
+                                <h3 className="mt-4 text-sm font-semibold">{t("dragDrop")}</h3>
                                 <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
-                                    or click below to select from your computer
+                                    {t("orClick")}
                                 </p>
                                 <div className="mt-6">
                                     <Button asChild variant="outline" className="cursor-pointer font-semibold shadow-sm text-sm">
-                                        <label htmlFor="file-upload">Select File</label>
+                                        <label htmlFor="file-upload">{t("selectFile")}</label>
                                     </Button>
                                     <input id="file-upload" type="file" className="sr-only" accept=".pdf" onChange={handleFileInput} />
                                 </div>
@@ -662,49 +664,49 @@ function NewDocumentContent() {
                                                 b => (b.pageNum ?? 1) === index + 1 && b.xPct != null && b.yPct != null
                                             );
                                             return (
-                                            <div key={`page_${index + 1}`} className="mb-4 relative" style={{ width: pageWidth }} data-page-index={index}>
-                                                <Page
-                                                    pageNumber={index + 1}
-                                                    width={pageWidth}
-                                                    renderTextLayer={false}
-                                                    renderAnnotationLayer={false}
-                                                />
-                                                {/* Template-loaded blocks: position by % relative to this page; draggable to adjust */}
-                                                {blocksOnThisPage.map(block => (
-                                                    <div
-                                                        key={block.id}
-                                                        className={`absolute z-10 w-48 h-16 border-2 border-dashed rounded flex items-center justify-center shadow-lg cursor-grab touch-none
+                                                <div key={`page_${index + 1}`} className="mb-4 relative" style={{ width: pageWidth }} data-page-index={index}>
+                                                    <Page
+                                                        pageNumber={index + 1}
+                                                        width={pageWidth}
+                                                        renderTextLayer={false}
+                                                        renderAnnotationLayer={false}
+                                                    />
+                                                    {/* Template-loaded blocks: position by % relative to this page; draggable to adjust */}
+                                                    {blocksOnThisPage.map(block => (
+                                                        <div
+                                                            key={block.id}
+                                                            className={`absolute z-10 w-48 h-16 border-2 border-dashed rounded flex items-center justify-center shadow-lg cursor-grab touch-none
                                                             ${block.type === 'signature' ? 'bg-amber-100 dark:bg-amber-900/90 border-amber-500 text-amber-900 dark:text-amber-100' :
-                                                                block.type === 'date' ? 'bg-muted border-border text-foreground' :
-                                                                    block.type === 'text' ? 'bg-purple-200 dark:bg-purple-900/80 border-purple-500 text-purple-900 dark:text-purple-100' :
-                                                                        'bg-emerald-200 dark:bg-emerald-900/80 border-emerald-500 text-emerald-900 dark:text-emerald-100'
-                                                            }
+                                                                    block.type === 'date' ? 'bg-muted border-border text-foreground' :
+                                                                        block.type === 'text' ? 'bg-purple-200 dark:bg-purple-900/80 border-purple-500 text-purple-900 dark:text-purple-100' :
+                                                                            'bg-emerald-200 dark:bg-emerald-900/80 border-emerald-500 text-emerald-900 dark:text-emerald-100'
+                                                                }
                                                             ${draggingBlockId === block.id ? 'cursor-grabbing shadow-xl ring-2 ring-amber-500' : ''}`}
-                                                        style={{
-                                                            left: `${(block.xPct ?? 0) * 100}%`,
-                                                            top: `${(block.yPct ?? 0) * 100}%`,
-                                                            touchAction: 'none'
-                                                        }}
-                                                        onPointerDown={(ev) => handlePointerDown(ev, block.id, true, block.pageNum ?? index + 1)}
-                                                        onPointerMove={handlePointerMove}
-                                                        onPointerUp={handlePointerUp}
-                                                        onPointerCancel={handlePointerUp}
-                                                    >
-                                                        <div className="flex flex-col items-start justify-center w-full px-3 pointer-events-none min-w-0">
-                                                            <div className="flex items-center gap-2 font-semibold text-sm w-full">
-                                                                <GripHorizontal className="h-4 w-4 shrink-0" />
-                                                                {block.type === 'signature' && 'Sign Here'}
-                                                                {block.type === 'date' && 'Date Signed'}
-                                                                {block.type === 'text' && 'Text Input'}
-                                                                {block.type === 'checkbox' && 'Checkbox'}
+                                                            style={{
+                                                                left: `${(block.xPct ?? 0) * 100}%`,
+                                                                top: `${(block.yPct ?? 0) * 100}%`,
+                                                                touchAction: 'none'
+                                                            }}
+                                                            onPointerDown={(ev) => handlePointerDown(ev, block.id, true, block.pageNum ?? index + 1)}
+                                                            onPointerMove={handlePointerMove}
+                                                            onPointerUp={handlePointerUp}
+                                                            onPointerCancel={handlePointerUp}
+                                                        >
+                                                            <div className="flex flex-col items-start justify-center w-full px-3 pointer-events-none min-w-0">
+                                                                <div className="flex items-center gap-2 font-semibold text-sm w-full">
+                                                                    <GripHorizontal className="h-4 w-4 shrink-0" />
+                                                                    {block.type === 'signature' && t("signHere")}
+                                                                    {block.type === 'date' && t("dateSigned")}
+                                                                    {block.type === 'text' && t("textInput")}
+                                                                    {block.type === 'checkbox' && t("checkbox")}
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground truncate w-full mt-0.5">
+                                                                    {signers.find(s => s.id === block.signerId)?.name || `Signer ${(signers.findIndex(s => s.id === block.signerId) + 1) || 1}`}
+                                                                </span>
                                                             </div>
-                                                            <span className="text-xs text-muted-foreground truncate w-full mt-0.5">
-                                                                {signers.find(s => s.id === block.signerId)?.name || `Signer ${(signers.findIndex(s => s.id === block.signerId) + 1) || 1}`}
-                                                            </span>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                    ))}
+                                                </div>
                                             );
                                         })}
                                     </Document>
@@ -737,13 +739,13 @@ function NewDocumentContent() {
                                                     <div className="flex flex-col items-start justify-center min-w-0 pointer-events-none">
                                                         <div className="flex items-center gap-2">
                                                             <GripHorizontal className="h-4 w-4 shrink-0" />
-                                                            {block.type === 'signature' && 'Sign Here'}
-                                                            {block.type === 'date' && 'Date Signed'}
-                                                            {block.type === 'text' && 'Text Input'}
-                                                            {block.type === 'checkbox' && 'Checkbox'}
+                                                            {block.type === 'signature' && t("signHere")}
+                                                            {block.type === 'date' && t("dateSigned")}
+                                                            {block.type === 'text' && t("textInput")}
+                                                            {block.type === 'checkbox' && t("checkbox")}
                                                         </div>
                                                         <span className="text-xs text-muted-foreground truncate w-full mt-0.5">
-                                                            {signers.find(s => s.id === block.signerId)?.name || `Signer ${(signers.findIndex(s => s.id === block.signerId) + 1) || 1}`}
+                                                            {signers.find(s => s.id === block.signerId)?.name || t("signerLabel", { count: (signers.findIndex(s => s.id === block.signerId) + 1) || 1 })}
                                                         </span>
                                                     </div>
                                                     <button
@@ -768,7 +770,7 @@ function NewDocumentContent() {
                 <div className="space-y-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Signer Details</CardTitle>
+                            <CardTitle>{t("signerDetails")}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <FieldGroup className="space-y-2">
@@ -789,7 +791,7 @@ function NewDocumentContent() {
                                             )}
                                             <Field>
                                                 <div className="flex items-center gap-2">
-                                                    <FieldLabel htmlFor={`signer-name-${s.id}`}>Signer {idx + 1} Name</FieldLabel>
+                                                    <FieldLabel htmlFor={`signer-name-${s.id}`}>{t("signerNameX", { count: idx + 1 })}</FieldLabel>
                                                     <Button
                                                         type="button"
                                                         variant="link"
@@ -799,38 +801,38 @@ function NewDocumentContent() {
                                                             const supabase = createClient();
                                                             const { data: { user } } = await supabase.auth.getUser();
                                                             if (!user) {
-                                                                toast.error("You are not signed in.");
+                                                                toast.error(t("notSignedIn"));
                                                                 return;
                                                             }
                                                             const name = (user.user_metadata?.full_name as string) ?? user.email ?? "";
                                                             setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name, email: user.email ?? "" } : sig));
-                                                            toast.success("Filled with your details.");
+                                                            toast.success(t("filledDetails"));
                                                         }}
                                                     >
-                                                        Me
+                                                        {t("me")}
                                                     </Button>
                                                 </div>
                                                 <Input
                                                     id={`signer-name-${s.id}`}
-                                                    placeholder="e.g. Jane Doe"
+                                                    placeholder={t("signerNamePlaceholder")}
                                                     value={s.name}
                                                     onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name: e.target.value } : sig))}
                                                 />
                                             </Field>
                                             <Field>
-                                                <FieldLabel htmlFor={`signer-email-${s.id}`}>Signer {idx + 1} Email</FieldLabel>
+                                                <FieldLabel htmlFor={`signer-email-${s.id}`}>{t("signerEmailX", { count: idx + 1 })}</FieldLabel>
                                                 <Input
                                                     id={`signer-email-${s.id}`}
                                                     type="email"
-                                                    placeholder="jane@example.com"
+                                                    placeholder={t("signerEmailPlaceholder")}
                                                     value={s.email}
                                                     onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, email: e.target.value } : sig))}
                                                 />
                                             </Field>
 
                                             <FieldSet>
-                                                <FieldLegend variant="label">Signing type</FieldLegend>
-                                                <FieldDescription>Individual or business for this signer.</FieldDescription>
+                                                <FieldLegend variant="label">{t("signingType")}</FieldLegend>
+                                                <FieldDescription>{t("signingTypeDesc")}</FieldDescription>
                                                 <RadioGroup
                                                     value={(s.isBusiness ?? false) ? "business" : "personal"}
                                                     onValueChange={(v) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, isBusiness: v === "business" } : sig))}
@@ -839,7 +841,7 @@ function NewDocumentContent() {
                                                     <FieldLabel htmlFor={`signing-personal-${s.id}`} className="cursor-pointer">
                                                         <Field orientation="horizontal" className="w-full">
                                                             <FieldContent>
-                                                                <FieldTitle>Personal</FieldTitle>
+                                                                <FieldTitle>{t("personal")}</FieldTitle>
                                                             </FieldContent>
                                                             <RadioGroupItem value="personal" id={`signing-personal-${s.id}`} />
                                                         </Field>
@@ -847,7 +849,7 @@ function NewDocumentContent() {
                                                     <FieldLabel htmlFor={`signing-business-${s.id}`} className="cursor-pointer">
                                                         <Field orientation="horizontal" className="w-full">
                                                             <FieldContent>
-                                                                <FieldTitle>Business</FieldTitle>
+                                                                <FieldTitle>{t("business")}</FieldTitle>
                                                             </FieldContent>
                                                             <RadioGroupItem value="business" id={`signing-business-${s.id}`} />
                                                         </Field>
@@ -858,20 +860,20 @@ function NewDocumentContent() {
                                             {(s.isBusiness ?? false) && (
                                                 <FieldGroup className="rounded-md bg-muted/50 py-4 gap-4">
                                                     <Field>
-                                                        <FieldLabel htmlFor={`signerCompany-${s.id}`}>Business Name</FieldLabel>
+                                                        <FieldLabel htmlFor={`signerCompany-${s.id}`}>{t("businessName")}</FieldLabel>
                                                         <Input
                                                             id={`signerCompany-${s.id}`}
-                                                            placeholder="e.g. Acme Corp"
+                                                            placeholder={t("businessNamePlaceholder")}
                                                             value={s.company ?? ''}
                                                             onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, company: e.target.value } : sig))}
                                                         />
                                                     </Field>
                                                     <Field>
-                                                        <FieldLabel htmlFor={`signerCompanyInfo-${s.id}`}>Additional Business Information</FieldLabel>
-                                                        <FieldDescription>Address, registration number, VAT ID, etc.</FieldDescription>
+                                                        <FieldLabel htmlFor={`signerCompanyInfo-${s.id}`}>{t("additionalInfo")}</FieldLabel>
+                                                        <FieldDescription>{t("additionalInfoDesc")}</FieldDescription>
                                                         <Textarea
                                                             id={`signerCompanyInfo-${s.id}`}
-                                                            placeholder="Address, Registration Number, VAT ID..."
+                                                            placeholder={t("additionalInfoPlaceholder")}
                                                             value={s.companyInfo ?? ''}
                                                             onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, companyInfo: e.target.value } : sig))}
                                                             rows={3}
@@ -884,7 +886,7 @@ function NewDocumentContent() {
                                     </div>
                                 ))}
                                 <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setSigners([...signers, { id: `signer-${Date.now()}`, name: '', email: '', isBusiness: false, company: '', companyInfo: '' }])}>
-                                    <Plus className="mr-2 h-4 w-4" /> Add Another Signer
+                                    <Plus className="mr-2 h-4 w-4" /> {t("addAnotherSigner")}
                                 </Button>
                             </FieldGroup>
                         </CardContent>
@@ -892,12 +894,12 @@ function NewDocumentContent() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Document Settings</CardTitle>
+                            <CardTitle>{t("documentSettings")}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Field>
-                                <FieldLabel htmlFor="expirationDays">Days until expiration</FieldLabel>
-                                <FieldDescription>How long the signer has to complete the document before the link drops.</FieldDescription>
+                                <FieldLabel htmlFor="expirationDays">{t("daysUntilExpiration")}</FieldLabel>
+                                <FieldDescription>{t("expirationDesc")}</FieldDescription>
                                 <Input
                                     id="expirationDays"
                                     type="number"
@@ -917,7 +919,7 @@ function NewDocumentContent() {
                         onClick={handleUpload}
                     >
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                        {isLoading ? "Preparing..." : "Send Document"}
+                        {isLoading ? t("preparing") : t("sendDocument")}
                     </Button>
                 </div>
             </div>

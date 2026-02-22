@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { useTranslations } from "next-intl";
 
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
 const Document = dynamic(() => import("react-pdf").then((mod) => mod.Document), { ssr: false });
@@ -47,6 +48,7 @@ interface TemplateSigner {
 
 export default function NewTemplatePage() {
     const router = useRouter();
+    const t = useTranslations("NewTemplate");
     const [file, setFile] = useState<File | null>(null);
     const [templateName, setTemplateName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -204,11 +206,11 @@ export default function NewTemplatePage() {
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Template saved successfully!");
+                toast.success(t("templateSaved"));
                 router.push("/templates");
             }
-        } catch (error) {
-            toast.error("Failed to save template");
+        } catch {
+            toast.error(t("failedToSave"));
         } finally {
             setIsLoading(false);
         }
@@ -216,11 +218,9 @@ export default function NewTemplatePage() {
 
     return (
         <div>
-            <div className="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Create Template</h1>
-                    <p className="text-muted-foreground mt-1">Upload a PDF and place fields where signers will sign. When you use this template to create a document, you assign signers and these fields are applied to them.</p>
-                </div>
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+                <p className="text-muted-foreground mt-1 max-w-3xl">{t("description")}</p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -236,13 +236,13 @@ export default function NewTemplatePage() {
                                 <div className="rounded-full bg-primary/10 p-4">
                                     <UploadCloud className="h-8 w-8 text-primary" />
                                 </div>
-                                <h3 className="mt-4 text-sm font-semibold">Drag & Drop PDF here</h3>
+                                <h3 className="mt-4 text-sm font-semibold">{t("dragDrop")}</h3>
                                 <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
-                                    or click below to select from your computer
+                                    {t("orClick")}
                                 </p>
                                 <div className="mt-6">
                                     <Button asChild variant="outline" className="cursor-pointer font-semibold shadow-sm text-sm">
-                                        <label htmlFor="file-upload">Select File</label>
+                                        <label htmlFor="file-upload">{t("selectFile")}</label>
                                     </Button>
                                     <input id="file-upload" type="file" className="sr-only" accept=".pdf" onChange={handleFileInput} />
                                 </div>
@@ -256,14 +256,14 @@ export default function NewTemplatePage() {
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" size="sm" className="gap-1.5 border-border bg-background text-foreground hover:bg-muted min-w-[140px] justify-between">
                                                     <User className="h-4 w-4 shrink-0" />
-                                                    {signers.find(s => s.id === selectedSignerIdForBlocks)?.name || `Signer ${(signers.findIndex(s => s.id === selectedSignerIdForBlocks) + 1) || 1}`}
+                                                    {signers.find(s => s.id === selectedSignerIdForBlocks)?.name || t("signerLabel", { count: (signers.findIndex(s => s.id === selectedSignerIdForBlocks) + 1) || 1 })}
                                                     <ChevronDown className="h-4 w-4 opacity-50" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start" className="min-w-[180px]">
                                                 {signers.map((s, idx) => (
                                                     <DropdownMenuItem key={s.id} onClick={() => setSelectedSignerIdForBlocks(s.id)}>
-                                                        Signer {idx + 1} {s.name ? `— ${s.name}` : ""}
+                                                        {s.name ? t("signerWithHyphen", { count: idx + 1, name: s.name }) : t("signerLabel", { count: idx + 1 })}
                                                     </DropdownMenuItem>
                                                 ))}
                                             </DropdownMenuContent>
@@ -273,40 +273,35 @@ export default function NewTemplatePage() {
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" size="sm" className="gap-1.5 border-border bg-background text-foreground hover:bg-muted">
                                                     <Plus className="h-4 w-4 shrink-0" />
-                                                    Add field
+                                                    {t("addField")}
                                                     <ChevronDown className="h-4 w-4 opacity-50" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start" className="min-w-[160px]">
                                                 <DropdownMenuItem onClick={() => addSignatureBlock("signature")} className="text-amber-700 dark:text-amber-200">
-                                                    <PenTool className="h-4 w-4 mr-2" /> Signature
+                                                    <PenTool className="h-4 w-4 mr-2" /> {t("signature")}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => addSignatureBlock("date")}>
-                                                    <Calendar className="h-4 w-4 mr-2" /> Date
+                                                    <Calendar className="h-4 w-4 mr-2" /> {t("date")}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => addSignatureBlock("text")} className="text-purple-700 dark:text-purple-200">
-                                                    <Type className="h-4 w-4 mr-2" /> Text
+                                                    <Type className="h-4 w-4 mr-2" /> {t("text")}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => addSignatureBlock("checkbox")} className="text-emerald-700 dark:text-emerald-200">
-                                                    <CheckSquare className="h-4 w-4 mr-2" /> Checkbox
+                                                    <CheckSquare className="h-4 w-4 mr-2" /> {t("checkbox")}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <Separator orientation="vertical" className="h-6 mx-1" />
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="sm" className="gap-1.5 border-border bg-background text-foreground hover:bg-muted ml-auto">
-                                                    <MoreHorizontal className="h-4 w-4 shrink-0" />
-                                                    Actions
-                                                    <ChevronDown className="h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem variant="destructive" onClick={() => setFile(null)}>
-                                                    <X className="h-4 w-4 mr-2" /> Remove PDF
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8 shrink-0 border-border bg-background text-muted-foreground hover:text-destructive hover:border-destructive/50 ml-auto"
+                                            onClick={() => setFile(null)}
+                                            title={t("removePdf")}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 )}
                                 <div className="relative flex-1 w-full min-h-0 bg-secondary overflow-y-auto flex items-start justify-center py-8" ref={containerRef}>
@@ -335,9 +330,9 @@ export default function NewTemplatePage() {
                                             key={block.id}
                                             className={`absolute z-10 w-48 h-16 border-2 border-dashed rounded cursor-grab flex items-center justify-center shadow-lg transition-shadow
                                                 ${block.type === "signature" ? "border-amber-500 bg-amber-100 dark:bg-amber-900/90 text-amber-900 dark:text-amber-100" :
-                                                block.type === "date" ? "border-border bg-muted text-foreground" :
-                                                block.type === "text" ? "border-purple-500 bg-purple-200 dark:bg-purple-900/80 text-purple-900 dark:text-purple-100" :
-                                                "border-emerald-500 bg-emerald-200 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-100"}
+                                                    block.type === "date" ? "border-border bg-muted text-foreground" :
+                                                        block.type === "text" ? "border-purple-500 bg-purple-200 dark:bg-purple-900/80 text-purple-900 dark:text-purple-100" :
+                                                            "border-emerald-500 bg-emerald-200 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-100"}
                                                 ${draggingBlockId === block.id ? "cursor-grabbing shadow-xl ring-2 ring-amber-500" : ""}`}
                                             style={{
                                                 left: `${block.x}px`,
@@ -352,10 +347,10 @@ export default function NewTemplatePage() {
                                             <div className="flex items-center justify-between w-full px-3 font-semibold text-sm">
                                                 <div className="flex items-center gap-2 pointer-events-none">
                                                     <GripHorizontal className="h-4 w-4" />
-                                                    {block.type === "signature" && "Sign Here"}
-                                                    {block.type === "date" && "Date Signed"}
-                                                    {block.type === "text" && "Text Input"}
-                                                    {block.type === "checkbox" && "Checkbox"}
+                                                    {block.type === "signature" && t("signHere")}
+                                                    {block.type === "date" && t("dateSigned")}
+                                                    {block.type === "text" && t("textInput")}
+                                                    {block.type === "checkbox" && t("checkbox")}
                                                 </div>
                                                 <button
                                                     type="button"
@@ -378,26 +373,26 @@ export default function NewTemplatePage() {
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Template Details</CardTitle>
+                            <CardTitle>{t("templateDetails")}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="template-name">Template Name</Label>
+                                <Label htmlFor="template-name">{t("templateName")}</Label>
                                 <Input
                                     id="template-name"
-                                    placeholder="e.g. Employee NDA - 2026"
+                                    placeholder={t("templateNamePlaceholder")}
                                     value={templateName}
                                     onChange={(e) => setTemplateName(e.target.value)}
                                 />
-                                <p className="text-xs text-muted-foreground">Name this form. When you &quot;Use template&quot;, signers below are prefilled and you can edit them on the new document page.</p>
+                                <p className="text-xs text-muted-foreground">{t("templateNameDesc")}</p>
                             </div>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Signers</CardTitle>
-                            <p className="text-sm text-muted-foreground">Add at least one signer (name + email). Fields you place on the PDF are assigned to the selected signer. You can edit signers when using this template.</p>
+                            <CardTitle>{t("signers")}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{t("signersDesc")}</p>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {signers.map((s, idx) => (
@@ -415,7 +410,7 @@ export default function NewTemplatePage() {
                                     )}
                                     <div className="grid gap-2">
                                         <div className="flex items-center gap-2">
-                                            <Label htmlFor={`signer-name-${s.id}`}>Signer {idx + 1} Name</Label>
+                                            <Label htmlFor={`signer-name-${s.id}`}>{t("signerNameX", { count: idx + 1 })}</Label>
                                             <Button
                                                 type="button"
                                                 variant="link"
@@ -425,25 +420,25 @@ export default function NewTemplatePage() {
                                                     const supabase = createClient();
                                                     const { data: { user } } = await supabase.auth.getUser();
                                                     if (!user) {
-                                                        toast.error("You are not signed in.");
+                                                        toast.error(t("notSignedIn"));
                                                         return;
                                                     }
                                                     const name = (user.user_metadata?.full_name as string) ?? user.email ?? "";
                                                     setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name, email: user.email ?? "" } : sig));
-                                                    toast.success("Filled with your details.");
+                                                    toast.success(t("filledDetails"));
                                                 }}
                                             >
-                                                Me
+                                                {t("me")}
                                             </Button>
                                         </div>
-                                        <Input id={`signer-name-${s.id}`} placeholder="e.g. Jane Doe" value={s.name} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name: e.target.value } : sig))} />
-                                        <Label htmlFor={`signer-email-${s.id}`}>Signer {idx + 1} Email</Label>
-                                        <Input id={`signer-email-${s.id}`} type="email" placeholder="jane@example.com" value={s.email} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, email: e.target.value } : sig))} />
+                                        <Input id={`signer-name-${s.id}`} placeholder={t("signerNamePlaceholder")} value={s.name} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name: e.target.value } : sig))} />
+                                        <Label htmlFor={`signer-email-${s.id}`}>{t("signerEmailX", { count: idx + 1 })}</Label>
+                                        <Input id={`signer-email-${s.id}`} type="email" placeholder={t("signerEmailPlaceholder")} value={s.email} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, email: e.target.value } : sig))} />
                                     </div>
                                 </div>
                             ))}
                             <Button type="button" variant="outline" size="sm" className="w-full gap-2" onClick={() => setSigners([...signers, { id: `signer-${Date.now()}`, name: "", email: "" }])}>
-                                <Plus className="h-4 w-4" /> Add another signer
+                                <Plus className="h-4 w-4" /> {t("addAnotherSigner")}
                             </Button>
                         </CardContent>
                     </Card>
@@ -455,7 +450,7 @@ export default function NewTemplatePage() {
                         onClick={handleSaveTemplate}
                     >
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                        {isLoading ? "Saving..." : "Save Template"}
+                        {isLoading ? t("saving") : t("saveTemplate")}
                     </Button>
                 </div>
             </div>

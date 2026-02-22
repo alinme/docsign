@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ThemeToggle";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 const SIGNATURE_COLORS = [
     { hex: "#0f172a", label: "Slate" },
@@ -25,6 +26,7 @@ const SIGNATURE_COLORS = [
 
 export default function SettingsPage() {
     const supabase = createClient();
+    const t = useTranslations("Settings");
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -43,10 +45,10 @@ export default function SettingsPage() {
         setSelectedColor(hex);
         const { error } = await supabase.auth.updateUser({ data: { signature_color: hex } });
         if (error) {
-            toast.error("Failed to save signature color");
+            toast.error(t("failedToSaveColor"));
             setSelectedColor(selectedColor);
         } else {
-            toast.success("Signature color saved");
+            toast.success(t("signatureColorSaved"));
         }
     };
 
@@ -54,8 +56,8 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground mt-1">Manage your DocSign workspace preferences.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+                    <p className="text-muted-foreground mt-1">{t("description")}</p>
                 </div>
             </div>
 
@@ -65,16 +67,16 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Moon className="h-5 w-5 text-muted-foreground" />
-                            Appearance
+                            {t("appearance")}
                         </CardTitle>
                         <CardDescription>
-                            Customize the interface theme of your workspace.
+                            {t("appearanceDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex items-center justify-between pt-0">
                         <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            <strong>Platform Theme</strong>
-                            <span>Switch between light and dark modes natively.</span>
+                            <strong>{t("platformTheme")}</strong>
+                            <span>{t("platformThemeDesc")}</span>
                         </div>
                         <ModeToggle />
                     </CardContent>
@@ -85,10 +87,10 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <PenTool className="h-5 w-5 text-muted-foreground" />
-                            Signature color
+                            {t("signatureColor")}
                         </CardTitle>
                         <CardDescription>
-                            Color used when you draw your signature. Used on documents when you sign.
+                            {t("signatureColorDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -116,10 +118,10 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <User className="h-5 w-5 text-muted-foreground" />
-                            Account Profile
+                            {t("accountProfile")}
                         </CardTitle>
                         <CardDescription>
-                            Manage your personal profile and authentication methods.
+                            {t("accountProfileDesc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -129,11 +131,11 @@ export default function SettingsPage() {
                                     <CheckCircle2 className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium">Google Authentication</p>
-                                    <p className="text-xs text-muted-foreground">You are securely connected with Google.</p>
+                                    <p className="text-sm font-medium">{t("googleAuth")}</p>
+                                    <p className="text-xs text-muted-foreground">{t("googleAuthDesc")}</p>
                                 </div>
                             </div>
-                            <Button variant="outline" size="sm" disabled>Manage</Button>
+                            <Button variant="outline" size="sm" disabled>{t("manage")}</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -144,9 +146,9 @@ export default function SettingsPage() {
                         <div className="rounded-full bg-background p-4 mb-4">
                             <Wrench className="h-8 w-8 text-muted-foreground" />
                         </div>
-                        <h2 className="text-xl font-semibold mb-2">Workspace Settings Coming Soon</h2>
+                        <h2 className="text-xl font-semibold mb-2">{t("workspaceComingSoon")}</h2>
                         <p className="text-muted-foreground max-w-md mx-auto">
-                            In a future update, you will be able to customize your branding, notification preferences, and team members here!
+                            {t("workspaceComingSoonDesc")}
                         </p>
                     </CardContent>
                 </Card>

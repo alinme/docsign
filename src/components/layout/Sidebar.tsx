@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Home, FileText, Settings, Files, Plus, HelpCircle, Search, MoreVertical, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,15 +16,18 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const navigation = [
-    { name: "Dashboard", href: "/", icon: Home },
-    { name: "Documents", href: "/documents", icon: Files },
-    { name: "Templates", href: "/templates", icon: FileText },
-];
+// Navigation is moved inside the component to use translations
 
 export function Sidebar() {
     const pathname = usePathname();
+    const t = useTranslations("Navigation");
     const [user, setUser] = useState<any>(null);
+
+    const navigation = useMemo(() => [
+        { name: t("dashboard"), href: "/", icon: Home },
+        { name: t("documents"), href: "/documents", icon: Files },
+        { name: t("templates"), href: "/templates", icon: FileText },
+    ], [t]);
 
     useEffect(() => {
         const supabase = createClient();
@@ -32,7 +36,7 @@ export function Sidebar() {
         });
     }, []);
 
-    const email = user?.email || "User";
+    const email = user?.email || t("user");
     const name = user?.user_metadata?.full_name || email;
     const initial = name.charAt(0).toUpperCase();
 
@@ -43,7 +47,7 @@ export function Sidebar() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
                     D
                 </div>
-                <span className="font-semibold text-sm">DocSign Inc.</span>
+                <span className="font-semibold text-sm">{t("docSignInc")}</span>
             </div>
 
             {/* Quick Create CTA */}
@@ -51,7 +55,7 @@ export function Sidebar() {
                 <Button asChild className="w-full justify-start gap-2 shadow-none bg-sidebar-primary text-sidebar-primary-foreground hover:!bg-sidebar-primary hover:!text-sidebar-primary-foreground dark:hover:!bg-sidebar-primary dark:hover:!text-sidebar-primary-foreground hover:brightness-110 transition-[filter] h-8 px-3 rounded-md" size="sm">
                     <Link href="/new">
                         <Plus className="h-3.5 w-3.5" />
-                        <span className="text-xs">Quick Create</span>
+                        <span className="text-xs">{t("quickCreate")}</span>
                     </Link>
                 </Button>
             </div>
@@ -59,7 +63,7 @@ export function Sidebar() {
             {/* Navigation Lists */}
             <div className="flex-1 overflow-auto px-3 py-2">
                 <div className="text-xs font-semibold text-sidebar-foreground/50 mb-2 mt-2 px-2">
-                    Application
+                    {t("application")}
                 </div>
                 <nav className="space-y-0.5">
                     {navigation.map((item) => {
@@ -110,13 +114,13 @@ export function Sidebar() {
                         <DropdownMenuItem asChild>
                             <Link href="/profile" className="flex items-center gap-2">
                                 <UserCircle className="h-4 w-4" />
-                                Edit Profile
+                                {t("editProfile")}
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link href="/settings" className="flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                Settings
+                                {t("settings")}
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

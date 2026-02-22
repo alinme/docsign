@@ -14,14 +14,16 @@ interface TemplateRow {
     created_at: string;
 }
 
-function TemplateTable({ templates, emptyMessage }: { templates: TemplateRow[]; emptyMessage: string }) {
+import { getTranslations } from "next-intl/server";
+
+function TemplateTable({ templates, emptyMessage, t }: { templates: TemplateRow[]; emptyMessage: string; t: any }) {
     if (templates.length === 0) {
         return (
             <EmptyState
-                title="No templates found"
+                title={t("noTemplatesFound")}
                 description={emptyMessage}
                 icon={FileText}
-                actionLabel="Create Template"
+                actionLabel={t("createTemplate")}
                 actionHref="/templates/new"
             />
         );
@@ -36,11 +38,11 @@ function TemplateTable({ templates, emptyMessage }: { templates: TemplateRow[]; 
             <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b">
                     <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Template Name</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Fields</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Signers</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Created</th>
-                        <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("templateName")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("fieldsHeader")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("signersHeader")}</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t("createdHeader")}</th>
+                        <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">{t("actions")}</th>
                     </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
@@ -53,10 +55,10 @@ function TemplateTable({ templates, emptyMessage }: { templates: TemplateRow[]; 
                                 </div>
                             </td>
                             <td className="p-4 align-middle text-muted-foreground">
-                                {fieldCount(template.sign_coordinates)} field(s)
+                                {t("fieldsCount", { count: fieldCount(template.sign_coordinates) })}
                             </td>
                             <td className="p-4 align-middle text-muted-foreground">
-                                {signerCount(template.signers)} signer(s)
+                                {t("signersCount", { count: signerCount(template.signers) })}
                             </td>
                             <td className="p-4 align-middle text-muted-foreground">
                                 {new Date(template.created_at).toLocaleDateString()}
@@ -64,7 +66,7 @@ function TemplateTable({ templates, emptyMessage }: { templates: TemplateRow[]; 
                             <td className="p-4 align-middle text-right">
                                 <div className="flex justify-end items-center gap-2">
                                     <Link href={`/new?template=${template.id}`}>
-                                        <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-primary hover:bg-primary/15 hover:text-primary hover:border-primary/50" title="Use template">
+                                        <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-primary hover:bg-primary/15 hover:text-primary hover:border-primary/50" title={t("useTemplate")}>
                                             <FileUp className="h-4 w-4" />
                                         </Button>
                                     </Link>
@@ -80,6 +82,7 @@ function TemplateTable({ templates, emptyMessage }: { templates: TemplateRow[]; 
 }
 
 export default async function TemplatesPage() {
+    const t = await getTranslations("Templates");
     const { data: templates, error } = await getTemplates();
 
     const rows = (templates || []) as TemplateRow[];
@@ -88,29 +91,29 @@ export default async function TemplatesPage() {
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
-                    <p className="text-muted-foreground mt-1">Reusable PDF forms and signature placements. Use a template to create documents quickly.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+                    <p className="text-muted-foreground mt-1">{t("description")}</p>
                 </div>
                 <Button asChild size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                     <Link href="/templates/new" className="gap-2">
                         <Plus className="h-4 w-4" />
-                        Create Template
+                        {t("createTemplate")}
                     </Link>
                 </Button>
             </div>
 
             {error ? (
                 <Card className="p-8 text-center text-destructive bg-destructive/10">
-                    <p>Failed to load templates: {error}</p>
+                    <p>{t("failedToLoad")}{error}</p>
                 </Card>
             ) : (
                 <Card className="shadow-sm">
                     <CardHeader>
-                        <CardTitle>Your templates</CardTitle>
-                        <CardDescription>Create a document from a template or manage templates below.</CardDescription>
+                        <CardTitle>{t("yourTemplates")}</CardTitle>
+                        <CardDescription>{t("yourTemplatesDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <TemplateTable templates={rows} emptyMessage="Create a template to reuse the same PDF and field positions for new documents." />
+                        <TemplateTable templates={rows} emptyMessage={t("emptyMessage")} t={t} />
                     </CardContent>
                 </Card>
             )}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,6 +28,7 @@ export function DeleteButton({ id, onDelete, itemName = "item" }: DeleteButtonPr
     const [isDeleting, setIsDeleting] = useState(false);
     const [open, setOpen] = useState(false);
     const router = useRouter();
+    const t = useTranslations("Components");
 
     const handleDelete = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -37,11 +39,11 @@ export function DeleteButton({ id, onDelete, itemName = "item" }: DeleteButtonPr
                 toast.error(result.error);
             } else {
                 setOpen(false);
-                toast.success(`Successfully deleted ${itemName}`);
+                toast.success(t("deleteSuccess", { itemName }));
                 router.refresh();
             }
         } catch (error) {
-            toast.error("An unexpected error occurred.");
+            toast.error(t("unexpectedError"));
         } finally {
             setIsDeleting(false);
         }
@@ -56,13 +58,13 @@ export function DeleteButton({ id, onDelete, itemName = "item" }: DeleteButtonPr
             </AlertDialogTrigger>
             <AlertDialogContent className="border-border bg-card">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-foreground">Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-foreground">{t("areYouSure")}</AlertDialogTitle>
                     <AlertDialogDescription className="text-muted-foreground">
-                        This action cannot be undone. This will permanently delete the {itemName} and remove its data from our servers.
+                        {t("deleteWarning", { itemName })}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex flex-wrap gap-3 sm:justify-end">
-                    <AlertDialogCancel className="border-border bg-background text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="border-border bg-background text-foreground hover:bg-muted">{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                         type="button"
                         onClick={(e) => { e.preventDefault(); handleDelete(e); }}
@@ -70,7 +72,7 @@ export function DeleteButton({ id, onDelete, itemName = "item" }: DeleteButtonPr
                         className="bg-red-600 text-white hover:bg-red-700 border-0 focus:ring-2 focus:ring-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-700"
                     >
                         {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Delete
+                        {t("delete")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

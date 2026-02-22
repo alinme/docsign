@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { emailDocumentSigners } from "@/actions/documents";
+import { useTranslations } from "next-intl";
 
 export function EmailSignersButton({ documentId }: { documentId: string }) {
     const [sending, setSending] = useState(false);
     const router = useRouter();
+    const t = useTranslations("Components");
 
     const handleClick = async () => {
         setSending(true);
@@ -18,7 +20,7 @@ export function EmailSignersButton({ documentId }: { documentId: string }) {
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Signers emailed.");
+                toast.success(t("signersEmailed"));
                 router.refresh();
             }
         } finally {
@@ -33,14 +35,14 @@ export function EmailSignersButton({ documentId }: { documentId: string }) {
             className="gap-2"
             onClick={handleClick}
             disabled={sending}
-            title="Email sign link to all signers"
+            title={t("emailSignersTitle")}
         >
             {sending ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
                 <Mail className="h-4 w-4 shrink-0" />
             )}
-            Email Signers
+            {t("emailSignersBtn")}
         </Button>
     );
 }
