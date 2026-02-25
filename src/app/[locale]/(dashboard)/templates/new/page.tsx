@@ -17,9 +17,12 @@ import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveTemplate } from "@/actions/templates";
 import { toast } from "sonner";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { pdfDocumentOptions } from "@/lib/pdf-options";
 import { useTranslations } from "next-intl";
 
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
@@ -56,6 +59,7 @@ export default function NewTemplatePage() {
     // At least one signer (name + email) so fields can be assigned
     const [signers, setSigners] = useState<TemplateSigner[]>([{ id: "signer-1", name: "", email: "" }]);
     const [selectedSignerIdForBlocks, setSelectedSignerIdForBlocks] = useState("signer-1");
+    const [signerDrawerId, setSignerDrawerId] = useState<string | null>(null);
 
     // PDF Rendering State
     const [numPages, setNumPages] = useState<number>(1);
@@ -308,6 +312,7 @@ export default function NewTemplatePage() {
                                     {pdfUrl && (
                                         <Document
                                             file={pdfUrl}
+                                            options={pdfDocumentOptions}
                                             onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                                             className="shadow-xl"
                                         >
@@ -389,60 +394,40 @@ export default function NewTemplatePage() {
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t("signers")}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{t("signersDesc")}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                    {/* Desktop: signer accordion (mobile uses floating pills) */}
+                    <div className="hidden lg:block space-y-2">
+                        <Accordion type="single" collapsible defaultValue={signers.length > 0 ? signers[0].id : ""} className="rounded-lg border border-border">
                             {signers.map((s, idx) => (
-                                <div key={s.id} className="space-y-2 rounded-lg border border-border p-3">
-                                    {signers.length > 1 && (
-                                        <div className="flex justify-end">
-                                            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-destructive hover:text-destructive" onClick={() => {
-                                                const next = signers.filter(sig => sig.id !== s.id);
-                                                setSigners(next);
-                                                if (selectedSignerIdForBlocks === s.id) setSelectedSignerIdForBlocks(next[0]?.id ?? "signer-1");
-                                            }}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
+                                <AccordionItem key={s.id} value={s.id} className="px-3">
+                                    <AccordionTrigger className="hover:no-underline py-3">
+                                        {s.name ? t("signerWithHyphen", { count: idx + 1, name: s.name }) : t("signerLabel", { count: idx + 1 })}
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pb-3">
+                                        <div className="space-y-1.5 text-sm">
+                                            <p className="text-foreground">{s.name || t("signerLabel", { count: idx + 1 })}</p>
+                                            <p className="text-foreground">{s.email || t("signerEmailEmptyPlaceholder")}</p>
                                         </div>
-                                    )}
-                                    <div className="grid gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor={`signer-name-${s.id}`}>{t("signerNameX", { count: idx + 1 })}</Label>
-                                            <Button
-                                                type="button"
-                                                variant="link"
-                                                size="sm"
-                                                className="h-auto p-0 text-muted-foreground hover:text-foreground text-xs"
-                                                onClick={async () => {
-                                                    const supabase = createClient();
-                                                    const { data: { user } } = await supabase.auth.getUser();
-                                                    if (!user) {
-                                                        toast.error(t("notSignedIn"));
-                                                        return;
-                                                    }
-                                                    const name = (user.user_metadata?.full_name as string) ?? user.email ?? "";
-                                                    const email = user.email ?? "";
-                                                    setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name, email } : sig));
-                                                    toast.success(email ? t("filledDetailsWithEmail", { email }) : t("filledDetails"));
-                                                }}
-                                            >
-                                                {t("me")}
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-primary" onClick={() => setSignerDrawerId(s.id)}>
+                                                {t("edit")}
                                             </Button>
+                                            {signers.length > 1 && (
+                                                <>
+                                                    <Separator orientation="vertical" className="h-4" />
+                                                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-destructive hover:text-destructive" onClick={() => { const filtered = signers.filter(sig => sig.id !== s.id); setSigners(filtered); if (selectedSignerIdForBlocks === s.id) setSelectedSignerIdForBlocks(filtered[0]?.id ?? "signer-1"); setSignerDrawerId(null); }}>
+                                                        {t("removeSigner", { count: idx + 1 })}
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
-                                        <Input id={`signer-name-${s.id}`} placeholder={t("signerNamePlaceholder")} value={s.name} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name: e.target.value } : sig))} />
-                                        <Label htmlFor={`signer-email-${s.id}`}>{t("signerEmailX", { count: idx + 1 })}</Label>
-                                        <Input id={`signer-email-${s.id}`} type="email" placeholder={t("signerEmailPlaceholder")} value={s.email} onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, email: e.target.value } : sig))} />
-                                    </div>
-                                </div>
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                            <Button type="button" variant="outline" size="sm" className="w-full gap-2" onClick={() => setSigners([...signers, { id: `signer-${Date.now()}`, name: "", email: "" }])}>
-                                <Plus className="h-4 w-4" /> {t("addAnotherSigner")}
-                            </Button>
-                        </CardContent>
-                    </Card>
+                        </Accordion>
+                        <Button type="button" variant="outline" className="w-full justify-start gap-2" onClick={() => { const newId = `signer-${Date.now()}`; setSigners([...signers, { id: newId, name: "", email: "" }]); setSignerDrawerId(newId); }}>
+                            <Plus className="h-4 w-4 shrink-0" /> {t("addAnotherSigner")}
+                        </Button>
+                    </div>
 
                     <Button
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
@@ -455,6 +440,112 @@ export default function NewTemplatePage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Mobile only: floating signer pills */}
+            <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 lg:hidden" aria-label={t("signers")}>
+                {signers.map((s, idx) => (
+                    <Button
+                        key={s.id}
+                        type="button"
+                        variant={signerDrawerId === s.id ? "secondary" : "outline"}
+                        size="icon"
+                        className="h-12 w-12 rounded-full shadow-lg border-2 border-border bg-background hover:bg-muted"
+                        onClick={() => setSignerDrawerId(s.id)}
+                        title={s.name ? t("signerWithHyphen", { count: idx + 1, name: s.name }) : t("signerLabel", { count: idx + 1 })}
+                    >
+                        <User className="h-5 w-5" />
+                    </Button>
+                ))}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 rounded-full shadow-lg border-2 border-dashed border-primary/50 bg-background hover:bg-primary/10 hover:border-primary"
+                    onClick={() => {
+                        const newId = `signer-${Date.now()}`;
+                        setSigners([...signers, { id: newId, name: "", email: "" }]);
+                        setSignerDrawerId(newId);
+                    }}
+                    title={t("addAnotherSigner")}
+                >
+                    <Plus className="h-5 w-5" />
+                </Button>
+            </div>
+
+            {/* Right drawer: signer form */}
+            <Sheet open={!!signerDrawerId} onOpenChange={(open) => !open && setSignerDrawerId(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+                    <SheetTitle className="sr-only">{signerDrawerId ? t("signerLabel", { count: (signers.findIndex(s => s.id === signerDrawerId) + 1) || 1 }) : t("signers")}</SheetTitle>
+                    {signerDrawerId && (() => {
+                        const s = signers.find(sig => sig.id === signerDrawerId);
+                        const idx = s ? signers.findIndex(sig => sig.id === signerDrawerId) + 1 : 0;
+                        if (!s) return null;
+                        return (
+                            <div className="space-y-4 p-4 pt-14">
+                                <div className="grid gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor={`drawer-signer-name-${s.id}`}>{t("signerNameX", { count: idx })}</Label>
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            size="sm"
+                                            className="h-auto p-0 text-muted-foreground hover:text-foreground text-xs"
+                                            onClick={async () => {
+                                                const supabase = createClient();
+                                                const { data: { user } } = await supabase.auth.getUser();
+                                                if (!user) { toast.error(t("notSignedIn")); return; }
+                                                const name = (user.user_metadata?.full_name as string) ?? user.email ?? "";
+                                                const email = user.email ?? "";
+                                                setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name, email } : sig));
+                                                toast.success(email ? t("filledDetailsWithEmail", { email }) : t("filledDetails"));
+                                            }}
+                                        >
+                                            {t("me")}
+                                        </Button>
+                                    </div>
+                                    <Input
+                                        id={`drawer-signer-name-${s.id}`}
+                                        placeholder={t("signerNamePlaceholder")}
+                                        value={s.name}
+                                        onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, name: e.target.value } : sig))}
+                                    />
+                                    <Label htmlFor={`drawer-signer-email-${s.id}`}>{t("signerEmailX", { count: idx })}</Label>
+                                    <Input
+                                        id={`drawer-signer-email-${s.id}`}
+                                        type="email"
+                                        placeholder={t("signerEmailPlaceholder")}
+                                        value={s.email}
+                                        onChange={(e) => setSigners(signers.map(sig => sig.id === s.id ? { ...sig, email: e.target.value } : sig))}
+                                    />
+                                </div>
+                                {signers.length > 1 && (
+                                    <div className="pt-2 border-t border-border">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => {
+                                                const filtered = signers.filter(sig => sig.id !== s.id);
+                                                setSigners(filtered);
+                                                if (selectedSignerIdForBlocks === s.id) setSelectedSignerIdForBlocks(filtered[0]?.id ?? "signer-1");
+                                                setSignerDrawerId(filtered[0]?.id ?? null);
+                                            }}
+                                        >
+                                            <X className="h-4 w-4 mr-1" /> {t("removeSigner", { count: idx })}
+                                        </Button>
+                                    </div>
+                                )}
+                                <div className="pt-4 border-t border-border">
+                                    <Button type="button" className="w-full" onClick={() => setSignerDrawerId(null)}>
+                                        {t("save")}
+                                    </Button>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

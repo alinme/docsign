@@ -89,15 +89,15 @@ export default async function TemplatesPage() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
                     <p className="text-muted-foreground mt-1">{t("description")}</p>
                 </div>
-                <Button asChild size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Link href="/templates/new" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        {t("createTemplate")}
+                <Button asChild size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 w-fit">
+                    <Link href="/templates/new" className="gap-2" title={t("createTemplate")}>
+                        <Plus className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">{t("createTemplate")}</span>
                     </Link>
                 </Button>
             </div>

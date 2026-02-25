@@ -52,7 +52,7 @@ export function DeleteButton({ id, onDelete, itemName = "item" }: DeleteButtonPr
     return (
         <AlertDialog open={open} onOpenChange={setOpen}>
             <AlertDialogTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-destructive hover:bg-destructive/15 hover:text-destructive hover:border-destructive/50">
+                <Button variant="outline" size="icon" className="h-8 w-8 border-border bg-background text-destructive hover:bg-destructive/15 hover:text-destructive hover:border-destructive/50" title={t("delete")}>
                     {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 </Button>
             </AlertDialogTrigger>

@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { pdfDocumentOptions } from "@/lib/pdf-options";
 import { useTranslations } from "next-intl";
 
 // Dynamically import react-pdf to avoid SSR DOMMatrix issues
@@ -254,6 +255,7 @@ function SignDocumentContent() {
                             {document.signedUrl && (
                                 <Document
                                     file={`${document.signedUrl}#view=FitH&toolbar=0&navpanes=0`}
+                                    options={pdfDocumentOptions}
                                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                                     className="shadow-xl"
                                 >
